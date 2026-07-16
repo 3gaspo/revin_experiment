@@ -10,8 +10,15 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$ROOT"
+
+if [ ! -f .venv/bin/activate ]; then
+  echo "Missing .venv/bin/activate in $ROOT" >&2
+  echo "Submit this job from the repository root, or create the virtual environment there." >&2
+  exit 1
+fi
+
 source .venv/bin/activate
 export PYTHONPATH="$ROOT/src"
 

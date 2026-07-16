@@ -35,7 +35,7 @@ Create the environment and install the dependencies:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 Launch the complete experiment from the repository root:
