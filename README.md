@@ -8,7 +8,7 @@ lookback-horizon settings, normalization variants, and seeds.
 
 ```text
 src/
-  run_revin_ecml.slurm   complete Slurm sweep
+  run_revin_experiment.slurm   complete Slurm sweep
   conf/config.yaml       default experiment configuration
   models/                PatchTST and DLinear implementations
   utils/                 data, normalization, training, and results code
@@ -41,11 +41,11 @@ pip install -r requirements.txt
 Launch the complete experiment from the repository root:
 
 ```bash
-sbatch src/run_revin_ecml.slurm
+sbatch src/run_revin_experiment.slurm
 ```
 
 The script runs both models, all normalization methods, datasets, L-H settings,
-and seeds. It writes each run under `outputs/revin_ecml/`, then creates one TeX
+and seeds. It writes each run under `outputs/revin_experiment/`, then creates one TeX
 table per test split. Set `SHOW_STD=false` in the script to omit `\pm` standard
 deviations across seeds.
 

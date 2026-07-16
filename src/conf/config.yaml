@@ -36,5 +36,5 @@ training:
 seed: 1
 
 output:
-  dir: outputs/revin_ecml/electricity/168_24
+  dir: outputs/revin_experiment/electricity/168_24
   name: patchtst_revin_nmse/seed_1

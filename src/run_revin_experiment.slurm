@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=revin_ecml
+#SBATCH --job-name=revin_experiment
 #SBATCH --gres=gpu:1
-#SBATCH --output=revin_ecml_%j.out
-#SBATCH --error=revin_ecml_%j.err
+#SBATCH --output=logs/revin_experiment_%j.out
+#SBATCH --error=logs/revin_experiment_%j.err
 #SBATCH --time=48:00:00
 #SBATCH --partition=h100-bis
 #SBATCH --cpus-per-task=4
@@ -22,7 +22,7 @@ METHODS=(none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse r
 EPOCHS=1200
 SHOW_STD=true
 DATA_ROOT="$ROOT/datasets"
-OUT_ROOT="$ROOT/outputs/revin_ecml"
+OUT_ROOT="$ROOT/outputs/revin_experiment"
 
 settings() {
   if [ "$1" = synthetic ]; then
