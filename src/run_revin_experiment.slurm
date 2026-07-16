@@ -3,10 +3,10 @@
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/revin_experiment_%j.out
 #SBATCH --error=logs/revin_experiment_%j.err
-#SBATCH --time=48:00:00
-#SBATCH --partition=h100-bis
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32000
+#SBATCH --time=01:00:00
+#SBATCH --partition=a100
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4000
 
 set -euo pipefail
 
@@ -15,11 +15,11 @@ cd "$ROOT"
 source .venv/bin/activate
 export PYTHONPATH="$ROOT/src"
 
-DATASETS=(electricity solar traffic synthetic)
-MODELS=(patchtst dlinear)
-SEEDS=(1 2 3 4 5)
-METHODS=(none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse)
-EPOCHS=1200
+DATASETS=(electricity) # solar traffic synthetic)
+MODELS=(patchtst) # dlinear)
+SEEDS=(1 2) # 3 4 5)
+METHODS=(instance_nmse) #none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse)
+EPOCHS=1000
 SHOW_STD=true
 DATA_ROOT="$ROOT/datasets"
 OUT_ROOT="$ROOT/outputs/revin_experiment"
