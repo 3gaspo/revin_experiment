@@ -1,0 +1,81 @@
+"""Train and evaluate one forecasting configuration."""
+
+import json
+import logging
+from pathlib import Path
+from time import perf_counter
+
+import hydra
+import torch
+from omegaconf import DictConfig, OmegaConf
+
+from utils.dataset import build_loaders
+from utils.models import build_model
+from utils.pipeline import TorchLearner, make_losses
+
+
+def summarize(losses):
+    return {
+        split: {
+            metric: {
+                "mean": values.float().mean().item(),
+                "std": values.float().std(unbiased=False).item(),
+                "count": values.numel(),
+            }
+            for metric, values in metrics.items()
+        }
+        for split, metrics in losses.items()
+    }
+
+
+def run_experiment(cfg: DictConfig):
+    started = perf_counter()
+    output = Path(cfg.output.dir) / cfg.output.name
+    output.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cfg, output / "config.yaml", resolve=True)
+
+    loaders, stats, dim = build_loaders(
+        cfg.data, cfg.task.lags, cfg.task.horizon, cfg.training.batch_size, cfg.seed
+    )
+    model = build_model(
+        cfg.model, cfg.normalization, cfg.task.lags, cfg.task.horizon, dim, stats
+    )
+    criterion, eval_losses = make_losses(cfg.training.loss)
+    learner = TorchLearner(
+        model, criterion, eval_losses, cfg.training.lr, cfg.training.device
+    )
+
+    logging.info(
+        "training %s/%s on %s -> %s",
+        cfg.model.name,
+        cfg.normalization.name,
+        learner.device,
+        output,
+    )
+    history = learner.fit(
+        loaders["train"],
+        {name: loader for name, loader in loaders.items() if name.startswith("valid")},
+        cfg.training.epochs,
+        cfg.seed,
+    )
+    model.save(output / "model.pt")
+    torch.save(history, output / "history.pt")
+
+    losses = {
+        name: learner.evaluate(loader)
+        for name, loader in loaders.items()
+        if name.startswith("test")
+    }
+    torch.save(losses, output / "losses.pt")
+    (output / "results.json").write_text(json.dumps(summarize(losses), indent=2))
+    logging.info("finished in %.1f seconds", perf_counter() - started)
+
+
+@hydra.main(version_base=None, config_path="../conf", config_name="config")
+def main(cfg: DictConfig):
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    run_experiment(cfg)
+
+
+if __name__ == "__main__":
+    main()
