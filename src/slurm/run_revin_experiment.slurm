@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=revin_experiment
+#SBATCH --job-name=revin
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/revin_experiment_%j.out
-#SBATCH --error=logs/revin_experiment_%j.err
+#SBATCH --output=logs/revin_%j.out
+#SBATCH --error=logs/revin_%j.err
 #SBATCH --time=23:00:00
 #SBATCH --partition=a100
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4000
 
 set -euo pipefail
-TEST_MODE="${TEST_MODE:-false}"
+TEST_MODE="${TEST_MODE:-true}"
 ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$ROOT"
 source .venv/bin/activate
