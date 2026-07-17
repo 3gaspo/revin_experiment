@@ -50,6 +50,8 @@ Normal mode uses ETTh1, Electricity, Traffic, Solar, Weather, and Exchange Rate;
 
 The job creates one table per model and test split. Tables report seed means and sample standard deviations with two decimals and an explicit per-row `\times 10^{m}` multiplier, allowing the paper tables to be regenerated after adding datasets.
 
+The launcher uses the `a100` partition, one CPU per task, the one-word job name `revin`, and `logs/%x_%j.{out,err}` for Slurm output. Hydra logs to stdout only, so it does not create a second `experiment.log` file.
+
 ## Lightweight check
 
 With the prepared project environment:
