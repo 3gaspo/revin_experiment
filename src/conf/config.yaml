@@ -28,13 +28,17 @@ normalization:
 
 training:
   batch_size: 256
-  epochs: 1200
+  epochs: 10000
   lr: 1e-5
   loss: nmse
   device: gpu
+  valid_eval_freq: 1000
+  logging_eval_freq: 1000
+  plot_step_train_loss: false
 
 seed: 1
+seeds: null
 
 output:
   dir: outputs/revin_experiment/electricity/168_24
-  name: patchtst_revin_nmse/seed_1
+  name: patchtst_revin_nmse

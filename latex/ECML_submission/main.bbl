@@ -1,0 +1,108 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{adam}
+Adam, K.D.B.J., et~al.: A method for stochastic optimization. arXiv preprint
+  arXiv:1412.6980  \textbf{1412}(6) (2014)
+
+\bibitem{tirex}
+Auer, A., Podest, P., Klotz, D., B{\"o}ck, S., Klambauer, G., Hochreiter, S.:
+  Tirex: Zero-shot forecasting across long and short horizons. In: 1st ICML
+  Workshop on Foundation Models for Structured Data (2024)
+
+\bibitem{layernorm}
+Ba, J.L., Kiros, J.R., Hinton, G.E.: Layer normalization. arXiv preprint
+  arXiv:1607.06450  (2016)
+
+\bibitem{dishts}
+Fan, W., Wang, P., Wang, D., Wang, D., Zhou, Y., Fu, Y.: Dish-ts: a general
+  paradigm for alleviating distribution shift in time series forecasting. In:
+  Proceedings of the AAAI conference on artificial intelligence. vol.~37, pp.
+  7522--7529 (2023)
+
+\bibitem{inflow}
+Fan, W., Zheng, S., Wang, P., Xie, R., Yi, K., Zhang, Q., Bian, J., Fu, Y.:
+  In-flow: Instance normalization flow for non-stationary time series
+  forecasting. In: Proceedings of the 31st ACM SIGKDD Conference on Knowledge
+  Discovery and Data Mining V. 1. pp. 295--306 (2025)
+
+\bibitem{HUANG2025114036}
+Huang, Z., Li, H., Liu, Y., Zhang, F., Zhang, X.: A channel-independent network
+  using patch external attention and mamba for long-term multivariate time
+  series forecasting. Applied Soft Computing p. 114036 (2025)
+
+\bibitem{batchnorm}
+Ioffe, S., Szegedy, C.: Batch normalization: Accelerating deep network training
+  by reducing internal covariate shift. In: International conference on machine
+  learning. pp. 448--456. pmlr (2015)
+
+\bibitem{revin}
+Kim, T., Kim, Y., Kim, H.B., Kim, J., Kim, G.: Reversible instance
+  normalization for accurate time-series forecasting against distribution
+  shift. In: Proceedings of the AAAI Conference on Artificial Intelligence.
+  vol.~36, pp. 6748--6756 (2022)
+
+\bibitem{DBLP:series/lncs/LeCunBOM12}
+LeCun, Y., Bottou, L., Orr, G.B., M{\"{u}}ller, K.: Efficient backprop. In:
+  Montavon, G., Orr, G.B., M{\"{u}}ller, K. (eds.) Neural Networks: Tricks of
+  the Trade - Second Edition, Lecture Notes in Computer Science, vol.~7700, pp.
+  9--48. Springer (2012)
+
+\bibitem{nonstattransfo}
+Liu, Y., Wu, H., Wang, J., Long, M.: Non-stationary transformers: Exploring the
+  stationarity in time series forecasting. Advances in neural information
+  processing systems  \textbf{35},  9881--9893 (2022)
+
+\bibitem{san}
+Liu, Z., Cheng, M., Li, Z., Huang, Z., Liu, Q., Xie, Y., Chen, E.: Adaptive
+  normalization for non-stationary time series forecasting: A temporal slice
+  perspective. Advances in Neural Information Processing Systems  \textbf{36},
+  14273--14292 (2023)
+
+\bibitem{beyondbatchnorm}
+Lubana, E.S., Dick, R., Tanaka, H.: Beyond batchnorm: Towards a unified
+  understanding of normalization in deep learning. Advances in Neural
+  Information Processing Systems  \textbf{34},  4778--4791 (2021)
+
+\bibitem{patchtst}
+Nie, Y., Nguyen, N.H., Sinthong, P., Kalagnanam, J.: A time series is worth 64
+  words: Long-term forecasting with transformers  (2023),
+  \url{https://arxiv.org/abs/2211.14730}
+
+\bibitem{adaptivenorm}
+Ogasawara, E., Martinez, L.C., De~Oliveira, D., Zimbr{\~a}o, G., Pappa, G.L.,
+  Mattoso, M.: Adaptive normalization: A novel data normalization approach for
+  non-stationary time series. In: The 2010 International Joint Conference on
+  Neural Networks (IJCNN). pp.~1--8. IEEE (2010)
+
+\bibitem{dain}
+Passalis, N., Tefas, A., Kanniainen, J., Gabbouj, M., Iosifidis, A.: Deep
+  adaptive input normalization for time series forecasting. IEEE transactions
+  on neural networks and learning systems  \textbf{31}(9),  3760--3765 (2019)
+
+\bibitem{instancenorm}
+Ulyanov, D., Vedaldi, A., Lempitsky, V.: Instance normalization: The missing
+  ingredient for fast stylization. arXiv preprint arXiv:1607.08022  (2016)
+
+\bibitem{moirai}
+Woo, G., Liu, C., Kumar, A., Xiong, C., Savarese, S., Sahoo, D.: Unified
+  training of universal time series forecasting transformers  (2024)
+
+\bibitem{fits}
+Xu, Z., Zeng, A., Xu, Q.: Fits: Modeling time series with $10 k $ parameters.
+  In: The Twelfth International Conference on Learning Representations
+
+\bibitem{fan}
+Ye, W., Deng, S., Zou, Q., Gui, N.: Frequency adaptive normalization for
+  non-stationary time series forecasting. Advances in Neural Information
+  Processing Systems  \textbf{37},  31350--31379 (2024)
+
+\bibitem{informer}
+Zhou, H., Zhang, S., Peng, J., Zhang, S., Li, J., Xiong, H., Zhang, W.:
+  Informer: Beyond efficient transformer for long sequence time-series
+  forecasting. In: Proceedings of the AAAI Conference on Artificial
+  Intelligence. vol.~35, pp. 11106--11115 (2021)
+
+\end{thebibliography}

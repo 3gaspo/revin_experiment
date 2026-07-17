@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 from utils.dataset import build_loaders
 from utils.models import build_model
 from utils.pipeline import TorchLearner, make_losses
+from utils.plots import plot_history
 
 
 def summarize(losses):
@@ -57,9 +58,17 @@ def run_experiment(cfg: DictConfig):
         {name: loader for name, loader in loaders.items() if name.startswith("valid")},
         cfg.training.epochs,
         cfg.seed,
+        cfg.training.get("valid_eval_freq"),
+        cfg.training.get("logging_eval_freq"),
     )
     model.save(output / "model.pt")
     torch.save(history, output / "history.pt")
+    plot_history(
+        history,
+        cfg.training.loss,
+        output / "criterion_loss.pdf",
+        bool(cfg.training.get("plot_step_train_loss", False)),
+    )
 
     losses = {
         name: learner.evaluate(loader)
@@ -71,10 +80,25 @@ def run_experiment(cfg: DictConfig):
     logging.info("finished in %.1f seconds", perf_counter() - started)
 
 
+def run_experiments(cfg: DictConfig):
+    seeds = cfg.get("seeds")
+    if not seeds:
+        return {int(cfg.seed): run_experiment(cfg)}
+    base_name = str(cfg.output.name).rstrip("/")
+    results = {}
+    for seed in seeds:
+        seeded = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
+        seeded.seed = int(seed)
+        seeded.seeds = None
+        seeded.output.name = f"{base_name}/seed_{int(seed)}"
+        results[int(seed)] = run_experiment(seeded)
+    return results
+
+
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
 def main(cfg: DictConfig):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    run_experiment(cfg)
+    run_experiments(cfg)
 
 
 if __name__ == "__main__":

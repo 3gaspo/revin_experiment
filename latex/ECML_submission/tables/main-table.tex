@@ -1,0 +1,69 @@
+\begin{table}[t]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (MSE on new dates). Average improvements are reported relative to the no-normalization baseline. BP stands for ``backpropagation", Std. for "standard". In bold: best models per settings (rows).}
+\centering
+\setlength{\tabcolsep}{1.5pt}
+\begin{tabular}{lccccccc}
+\toprule
+& & & & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H & None & Std. norm. & \thead{Std.\\BP} & \thead{Norm.\\BP} & \thead{Std.\\BP} & \thead{Norm.\\BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 349.83 & 20.56 & 8.52 & \textbf{4.91} & 8.52 & 4.92 \\
+ & 504-24 & 348.14 & 19.68 & 8.36 & \textbf{4.09} & 8.34 & 4.09 \\
+ & 504-168 & 347.21 & 28.28 & 11.00 & \textbf{7.09} & 10.94 & \textbf{7.09} \\
+ & 504-504 & 358.70 & 33.18 & 16.70 & 12.54 & 16.65 & \textbf{12.53} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 3.05 & 2.30 & 1.47 & \textbf{1.46} & 1.47 & 1.47 \\
+ & 504-24 & 3.12 & 2.16 & 1.44 & \textbf{1.38} & 1.44 & 1.38 \\
+ & 504-168 & 2.81 & 3.19 & 2.22 & \textbf{2.18} & 2.22 & \textbf{2.18} \\
+ & 504-504 & 2.82 & 3.55 & 2.40 & \textbf{2.33} & 2.40 & \textbf{2.33} \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 15.74 & \textbf{6.96} & 8.10 & 8.07 & 8.10 & 8.07 \\
+ & 504-24 & 19.62 & \textbf{6.44} & 7.52 & 7.47 & 7.52 & 7.47 \\
+ & 504-168 & 19.85 & \textbf{7.10} & 8.39 & 8.36 & 8.38 & 8.35 \\
+ & 504-504 & 19.10 & \textbf{7.17} & 8.49 & 8.47 & 8.48 & 8.47 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & $3.4\times10^{6}$ & $1.5\times10^3$ & 4.28 & \textbf{4.27} & 4.28 & \textbf{4.27} \\
+ & 100-20 & $3.2\times10^{6}$ & $5.3\times10^{3}$ & 3.66 & 3.66 & \textbf{3.65} & \textbf{3.65} \\
+ & 100-100 & $3.2\times10^{6}$ & $9.8\times10^{3}$ & \textbf{4.25} & \textbf{4.25} & \textbf{4.25} & \textbf{4.25} \\
+\midrule
+Improvements &  & 0.0 $\%$ & 62.32 $\%$ & 70.1 $\%$ & \textbf{70.84} $\%$ & 70.11 $\%$ & 70.84 $\%$ \\
+\bottomrule
+\end{tabular}
+\label{tab:main1}
+\end{table}
+
+\begin{table}[t]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (MSE on new dates and new users). Average improvements are expressed relative to the first column. BP stands for ``backpropagation", Std. for "standard". In bold: best models per settings (rows).}
+\centering
+\setlength{\tabcolsep}{1.5pt}
+\begin{tabular}{lccccccc}
+\toprule
+& & & & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H & None & Std. norm. & \thead{Std.\\BP} & \thead{Norm.\\BP} & \thead{Std.\\BP} & \thead{Norm.\\BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 61.16 & 23.55 & 0.93 & \textbf{0.59} & 0.93 & \textbf{0.59} \\
+ & 504-24 & 60.82 & 22.32 & 0.92 & \textbf{0.52} & 0.92 &\textbf{ 0.52} \\
+ & 504-168 & 60.27 & 21.33 & 1.02 & \textbf{0.67} & 1.01 & \textbf{0.67} \\
+ & 504-504 & 60.82 & 23.04 & 1.23 & \textbf{0.87} & 1.22 & \textbf{0.87} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 2.74 & 2.35 & 1.31 & \textbf{1.30} & 1.31 & \textbf{1.30} \\
+ & 504-24 & 2.74 & 2.20 & 1.28 & \textbf{1.23} & 1.28 &\textbf{ 1.23} \\
+ & 504-168 & 2.54 & 3.24 & 1.97 & \textbf{1.94} & 1.97 & \textbf{1.94} \\
+ & 504-504 & 2.52 & 3.59 & 2.13 & \textbf{2.06} & 2.13 & 2.07 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 14.44 & \textbf{6.51} & 7.30 & 7.27 & 7.30 & 7.27 \\
+ & 504-24 & 19.60 & \textbf{6.02} & 6.77 & 6.72 & 6.77 & 6.72 \\
+ & 504-168 & 18.75 & \textbf{6.87} & 8.13 & 8.09 & 8.13 & 8.09 \\
+ & 504-504 & 17.87 & \textbf{6.99} & 8.29 & 8.26 & 8.28 & 8.25 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & $3.6\times10^{6}$ & $1.5\times10^{3}$ & \textbf{4.30} & \textbf{4.30} & \textbf{4.30} & \textbf{4.30} \\
+ & 100-20 & $3.3\times10^{6}$ & $5.6\times10^{3}$ & \textbf{3.68} &\textbf{ 3.68} & \textbf{3.68} & \textbf{3.68} \\
+ & 100-100 & $3.3\times10^{6}$ & $1.1\times10^{4}$ & \textbf{4.30} & \textbf{4.30} & \textbf{4.30} & \textbf{4.30} \\
+\midrule
+Improvements &  & 0.0 $\%$  & 6.97 $\%$   & 70.62 $\%$   & \textbf{71.29} $\%$   & 70.63 $\%$   & \textbf{71.29} $\%$   \\
+\bottomrule
+\end{tabular}
+\label{tab:main2}
+\end{table}

@@ -1,0 +1,88 @@
+
+\begin{table}[!h]
+\centering
+    \scalebox{0.6}{
+    \begin{tabular}{lcccccc}
+    \toprule
+         & \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Standard} & \multicolumn{2}{c}{Instance}\\
+          \cmidrule(r){2-3}  \cmidrule(r){4-5}  \cmidrule(r){6-7}
+        & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} \\
+    \midrule
+        Electricity & 7.09 & 57.16 &\textbf{ 0.05} &\textbf{ 0.42} & 0.64 & 1.01 \\
+        Solar       & 3.48 & 0.98 & 1.05 & 0.3 & \textbf{0.78} & \textbf{0.29} \\
+        Traffic     & \textbf{0.32} & 0.99 & 1.39 & 4.29 & 0.92 & \textbf{0.45} \\
+        Synthetic   & 15.97 & 39.51 & 2.53 & 6.26 & \textbf{0.9} & \textbf{3.76} \\
+    \midrule
+    Difference      & 0\% & 0\% & -20.27\% & -20.13\% & 18.86\% & 78.42\%\\
+    \bottomrule
+    \end{tabular}
+    }
+    \caption{Energy distances between shifted distributions (inputs).} 
+    \label{tab:distances_energy_a}
+\end{table}
+
+\begin{table}[!h]
+\centering
+    \scalebox{0.6}{
+    \begin{tabular}{lcccccc}
+    \toprule
+         & \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Standard} & \multicolumn{2}{c}{Instance}\\
+          \cmidrule(r){2-3}  \cmidrule(r){4-5}  \cmidrule(r){6-7}
+        & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} \\
+    \midrule
+        Electricity & 7.31 & 59.13 & \textbf{0.05} & \textbf{0.43} & 0.67 & 1.05 \\
+        Solar       & 3.56 & 1.05  & 1.08 & \textbf{0.32} & \textbf{0.88} & \textbf{0.32} \\
+        Traffic     & \textbf{0.32} & 1.02  & 1.4  & 4.43 & 0.93 & \textbf{0.47 }\\
+        Synthetic   & 16.51 & 40.77 & 2.62 & 6.46 & \textbf{0.93} & \textbf{4.38} \\
+    \midrule
+    Difference      & 0\% & 0\% & -21.1\% & -20.34\% & 17.46\% & 77.73\%\\
+    \bottomrule
+    \end{tabular}
+    }
+    \caption{Energy distances between shifted distributions (windows).} 
+    \label{tab:distances_energy_b}
+\end{table}
+
+\begin{table}[!h]
+\centering
+    \scalebox{0.6}{
+    \begin{tabular}{lcccccc}
+    \toprule
+         & \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Standard} & \multicolumn{2}{c}{Instance}\\
+          \cmidrule(r){2-3}  \cmidrule(r){4-5}  \cmidrule(r){6-7}
+        & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} \\
+    \midrule
+        Electricity & 3.01 & 20.66 & 0.02 & 0.15 & \textbf{0} & \textbf{0} \\
+        Solar       & 1.18 & 0.3   & 0.36 & 0.09 & \textbf{0} & \textbf{0} \\
+        Traffic     & 0.08 & 0.4   & 0.36 & 1.72 & \textbf{0} & \textbf{0} \\
+        Synthetic   & 4.51 & 10.99 & 0.71 & 1.74 & \textbf{0} & \textbf{0} \\
+    \midrule
+    Difference      & 0\% & 0\% & -24.23\% & -19.14\% & 100\% & 100\%\\
+    \bottomrule
+    \end{tabular}
+    }
+    \caption{Energy distances between shifted distributions (statistics).} 
+    \label{tab:distances_energy_c}
+\end{table}
+
+\begin{table}[!h]
+\centering
+    \scalebox{0.6}{
+    \begin{tabular}{lcccccc}
+    \toprule
+         & \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Standard} & \multicolumn{2}{c}{Instance}\\
+          \cmidrule(r){2-3}  \cmidrule(r){4-5}  \cmidrule(r){6-7}
+        & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} & \thead{Temporal} & \thead{Spatial} \\
+    \midrule
+        Electricity & 0.08 & 0.57 & \textbf{0.08} & 0.57 & \textbf{0.08} & 0.57 \\
+        Solar       & 0.29 & \textbf{0.10}  & 0.29 & \textbf{0.10}  & 0.29 & \textbf{0.10} \\
+        Traffic     & \textbf{0.16} & 0.17 & 0.17 & \textbf{0.15} & \textbf{0.16} & 0.17 \\
+        Synthetic   & \textbf{0.10}  &\textbf{ 2.04} & \textbf{0.10}  &\textbf{ 2.04} & \textbf{0.10}  & \textbf{2.04} \\
+    \midrule
+    Difference      & 0\% & 0\% & -1.56\% & 2.94\% & 0\% & 0\%\\
+    \bottomrule
+    \end{tabular}
+    }
+    \caption{Energy distances between shifted distributions (modulations).} 
+    \label{tab:distances_energy_d}
+\end{table}

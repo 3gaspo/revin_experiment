@@ -1,0 +1,55 @@
+% \clearpage
+
+\section{Normalization for Time Series Forecasting} \label{related-content}
+
+\paragraph{Normalization in deep learning.} Early studies on neural networks optimization showed that having similarly distributed features centered around the origin was beneficial for convergence and performance
+% , as it renders the error surface more isotropic and allows gradient-based optimization to converge faster towards the minimum 
+\citep{DBLP:series/lncs/LeCunBOM12}. A common normalization technique is \textit{standard normalization}, which centers and reduces data distributions using the training data's statistics:
+\begin{equation}
+    \tilde{{x}}=\frac{{x}-{\mu}}{{\sigma}+\epsilon}
+\end{equation}
+where $\epsilon\ll 1$ and the statistics $\mu,\sigma$ are computed empirically as:
+\begin{equation}
+    \mu=\frac{1}{N}\sum_{x\in \mathcal{D}}\frac{1}{L}\sum_{i=1}^L x_i \; \in \mathbb{R} \quad \textrm{and} \quad{{\sigma}}^2=\frac{1}{NL-1}\sum_{x\in \mathcal{D}}\sum_{i=1}^L( x_i-\mu)^2 \; >0.
+\end{equation}
+
+Most normalization techniques build on this formulation by varying either the dimensions over which statistics are computed or the population across which they are aggregated. For example, BatchNorm \citep{batchnorm} estimates channel-wise running statistics over mini-batches, whereas LayerNorm \citep{layernorm} computes scalar statistics, separately for each individual instance. Additional learnable linear layers may also be introduced upstream or downstream of the main transformation to increase flexibility. A thorough analysis of common normalization methods is provided in \citep{beyondbatchnorm}. In general, more individualized normalization yields more stable gradient updates, but the resulting statistics are also less informative. This induces a speed–stability trade-off. GroupNorm~\citep{groupnorm} addresses this trade-off in computer vision by computing statistics over groups of variates, thereby stabilizing the estimates without discarding as much instance-specific information.
+
+Other families of transformations can also be applied, such as Min--Max \citep{adaptivenorm} which constrains the values to a fixed interval, relative-mean \citep{chronos1} and RMSNorm \citep{rms} which divide $x$ by the mean or the root mean square, respectively, and more generally any differentiable linear or non-linear function with a few additional assumptions (e.g. the sigmoid and hyperbolic tangent), see \citep{bhanja2018impact} for a thorough comparison. Research on normalization layers in deep learning has explored the effectiveness of these various normalization strategies within neural network layers, typically with the goal of improving optimization and convergence. In this paper, we specifically focus on the normalization of \textit{inputs}, with the specific aim of mitigating distribution shifts.
+
+
+\paragraph{Normalization for time series forecasting.} 
+%Normalization has long been used not only to facilitate optimization but also to mitigate time-series non-stationarity, as recognized early on, e.g. by \citet{adaptivenorm}.
+%Indeed, 
+Standard normalization cannot handle distribution shifts, since $(\mu,\sigma)$ no longer correspond to the correct statistics at inference time. Nevertheless, until recently, standard normalization---sometimes called \textit{standardization} or \textit{z-normalization}---has remained the default strategy \citep{informer,dain}. Yet different normalization schemes can help mitigate time-series non-stationarity, as recognized early on, e.g. by \citet{adaptivenorm}.
+Drawing inspiration from normalization techniques developed for other domains, in particular  \textit{instance normalization} \citep{instancenorm}, \citet{revin} recently proposed \textit{Reversible Instance Normalization} for time series forecasting. 
+
+With RevIN, the prediction pipeline associated with a model $f_\theta: x \mapsto \hat{y}$ becomes:
+\begin{equation}
+\tilde{{x}}=\alpha\frac{{x}-{\mu}_x}{{\sigma_x}}+\beta, \quad 
+\hat{y} = \sigma_x \left( \frac{f_\theta(\tilde{x}) - \beta}{\alpha} \right) + \mu_x \quad (\alpha,\beta \in \mathbb{R}),
+\end{equation}
+where, contrary to standard normalization, the statistics are computed per-instance rather than on the whole dataset, as follows:
+\begin{equation}
+\mu_x = \frac{1}{L}\sum_{i=1}^L x_i \;\in \mathbb{R}, \quad \sigma_x^2 = \frac{1}{L-1}\sum_{i=1}^L(x_i-\mu_x)^2\;>0.
+\end{equation}
+% Instance normalization ensures that scale and offset levels seen by the model will be the same whatever the input.
+
+The overall pipeline can be decomposed into the following steps:
+\begin{enumerate*}[(a)]
+    \item apply instance normalization, i.e. standardize using the input statistics $\mu_x$ and $\sigma_x$;
+    \item apply a learnable affine transformation with global parameters $\alpha$ and $\beta$;
+    \item pass the transformed %normalized  
+    input through the forecaster $f_{\theta}$;
+    \item apply the inverse affine transformation; and
+    \item denormalize using the inverse of the normalization.
+\end{enumerate*} A diagram of the whole process is presented in \cref{fig:revin-process}.
+
+\input{plots/revin-process}
+
+The denormalization step is a key component for forecasting, since it enables the model to make predictions at the correct offset and scale
+%, even after removing them from the inputs.
+By normalizing input windows using their own statistics, RevIN addresses temporal distribution shifts and, consequently, substantially  improves performance \citep{revin}. It seems apparent that RevIN would also mitigate spatial distribution shifts. Yet it remains unclear whether it can address conditional distribution shifts.
+
+\label{extensions}
+\paragraph{Extensions to RevIN.}  A few works have identified limitations of RevIN and proposed extensions or alternatives. In \textit{DAIN} \citep{dain}, per instance normalization is applied using learned scale and offset factors (more general functions of $x$ replacing the combination of $\mu_x,\sigma_x$ and $\alpha,\beta$), but no denormalization module is proposed. In \textit{Non-Stationary Transformers} \citep{nonstattransfo}, input statistics are reinjected into the model's attention layers to mitigate the \textit{over-stationarization} effect, i.e. losing relevant information when normalizing. The authors also point out that $\alpha$ and $\beta$ in RevIN can be removed with no harm to the model. In \textit{Dish-TS} \citep{dishts}, a shift similar to our conditional shift is mentioned, and the authors propose learning both the normalization and denormalization factors as functions of the input, which requires careful regularization. In \citet{san}, normalization is applied to slices of the instance window, and future statistics are predicted based on past ones. In \citet{inflow}, a modern formulation of RevIN is developed using \textit{normalization flows} and \textit{bi-level optimization}, but essentially reverts to standard statistics with an additional affine layer learned on the validation data.  Overall, the majority of these works have identified different limitations of RevIN which we summarize as follows: normalizing and denormalizing by $\mu_x,\sigma_x$ introduces a strong inductive bias, which mitigates certain distribution shifts but also limits models' capacity to learn a robust conditional distribution. Yet the proposed solutions are either incomplete \citep{dain}, model-specific \citep{nonstattransfo} or require additional complex training procedures \citep{dishts,san,inflow}. To our knowledge, no efficient and lightweight alternative has yet emerged. In this paper, we seek to properly identify the limitations of RevIN and draw perspectives on how to solve them.

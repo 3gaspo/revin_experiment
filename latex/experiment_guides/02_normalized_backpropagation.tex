@@ -1,0 +1,51 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{RevIN Experiment 2: Normalized Backpropagation}
+\author{Thesis experiment note}
+\date{}
+\begin{document}\maketitle
+\section{Theoretical overview and goal}
+With instance statistics $(\mu_x,\sigma_x)$, data-space MSE is
+$\lVert\hat y-y\rVert^2$, whereas normalized backpropagation minimizes
+\[
+ \operatorname{nMSE}(\hat y,y\mid x)=
+ H^{-1}\sum_{h=1}^{H}
+ \left(\frac{\hat y_h-y_h}{\sigma_x+\varepsilon}\right)^2.
+\]
+The latter gives comparable gradient weight to low- and high-scale windows.
+Predictions are still denormalized and evaluated with ordinary data-space MSE,
+so only optimization weighting changes.
+
+\goal{Test whether scale-balanced gradients improve generalization independently
+of the forward normalization layer, and whether RevIN's affine parameters alter
+that effect.}
+
+\section{Implementation details}
+Two paired contrasts are run:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Forward transform & Data-space loss & Normalized loss \\
+\midrule
+Non-affine instance & \code{instance\_mse} & \code{instance\_nmse} \\
+Affine RevIN & \code{revin\_mse} & \code{revin\_nmse} \\
+\bottomrule
+\end{tabular}
+\end{center}
+Architecture, seed, batch composition, learning rate, and epoch budget are held
+fixed within every pair.  The project supports MSE, MAE, nMSE, nMAE, and
+relative MSE, but this paper comparison focuses on MSE versus nMSE.
+
+\textbf{Loss implementation:} \code{src/utils/losses.py}\\
+\textbf{Experiment orchestration:} \code{src/scripts/experiment.py}
+
+The normal sweep covers six datasets, seven settings, DLinear/PatchTST, and five
+seeds, with validation every 1,000 steps.  Final tables always use test MSE in
+data space, show sample standard deviations, and state the row multiplier.
+
+\section{Interpretation}
+An nMSE-trained model can win on data-space MSE because balanced gradients learn
+a mapping that generalizes across heterogeneous scales.  Training curves from
+MSE and nMSE have different units and should not be compared by absolute height;
+selection should use the common validation metric.
+\end{document}

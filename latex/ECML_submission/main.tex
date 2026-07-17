@@ -1,0 +1,67 @@
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\newcommand{\corr}{\textsuperscript{*}}
+% N.B.: do not change anything above this line. If you require additional
+% packages, please load them directly after this line.
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage[inline,shortlabels]{enumitem}
+\usepackage[capitalize]{cleveref}
+\newcommand{\citep}[1]{\cite{#1}}
+\newcommand{\citet}[1]{\cite{#1}}
+
+\newcommand{\thead}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
+
+\begin{document}
+
+\title{On the Role of Reversible Instance Normalization in Time Series Forecasting}
+\titlerunning{On the Role of Reversible Instance Normalization in Time Series Forecasting}
+
+\newif\ifanonymous
+\anonymoustrue % submission
+% \anonymousfalse % camera-ready
+
+\ifanonymous
+  \author{Anonymous Author(s)}
+  \authorrunning{Anonymous Author(s)}
+  \institute{Anonymous Institution}
+\else
+  % Current author, running-author, and institute blocks
+  \author{Gaspard Berthelier\inst{1,2} \corr \and
+    Tahar Nabil\inst{1} \and
+    Etienne Le Naour\inst{1} \and
+    Richard Niamke\inst{1} \and
+    Samir Perlaza\inst{2} \and
+    Giovanni Neglia\inst{2}}
+    \authorrunning{G. Berthelier et al.}
+    
+    \institute{EDF R\&D, France\\
+    \email{\{gaspard.berthelier,tahar.nabil,etienne.le-naour,richard.niamke\}@edf.fr}
+    \and
+    Inria Sophia Antipolis, France\\
+    \email{\{samir.perlaza,giovanni.neglia\}@inria.fr}}
+\fi
+
+
+\maketitle
+
+\input{00--abstract}
+\input{01--intro}
+\input{02--normalization-methods}
+\input{03--experiments}
+\input{04--conclusion}
+
+\begin{credits}
+\subsubsection{\discintname}
+The authors have no competing interests to declare that are relevant to
+the content of this article.
+\end{credits}
+
+\bibliographystyle{splncs04}
+\bibliography{biblio}
+
+\end{document}

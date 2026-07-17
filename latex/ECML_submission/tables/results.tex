@@ -1,0 +1,288 @@
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (MSE test1 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 349.83 & 20.56 & 8.52 & \textbf{4.91} & 8.52 & 4.92 \\
+ & 504-24 & 348.14 & 19.68 & 8.36 & \textbf{4.09} & 8.34 & 4.09 \\
+ & 504-168 & 347.21 & 28.28 & 11.00 &\textbf{ 7.09} & 10.94 & \textbf{7.09} \\
+ & 504-504 & 358.70 & 33.18 & 16.70 & 12.54 & 16.65 & \textbf{12.53} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 3.05 & 2.30 & 1.47 & \textbf{1.46} & 1.47 & 1.47 \\
+ & 504-24 & 3.12 & 2.16 & 1.44 & \textbf{1.38} & 1.44 & 1.38 \\
+ & 504-168 & 2.81 & 3.19 & 2.22 & \textbf{2.18} & 2.22 & 2.18 \\
+ & 504-504 & 2.82 & 3.55 & 2.40 & \textbf{2.33} & 2.40 & \textbf{2.33 }\\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 15.74 & \textbf{6.96} & 8.10 & 8.07 & 8.10 & 8.07 \\
+ & 504-24 & 19.62 & \textbf{6.44} & 7.52 & 7.47 & 7.52 & 7.47 \\
+ & 504-168 & 19.85 & \textbf{7.10} & 8.39 & 8.36 & 8.38 & 8.35 \\
+ & 504-504 & 19.10 & \textbf{7.17} & 8.49 & 8.47 & 8.48 & 8.47 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 3.4$\times10^{6}$ & 1.5$\times10^3$  & 4.28 & 4.27 & 4.28 & \textbf{4.27} \\
+ & 100-20 & 3.2$\times10^{6}$ & 5.3$\times10^{3}$ & 3.66 & 3.66 & 3.65 & \textbf{3.65} \\
+ & 100-100 & 3.2$\times10^{6}$ & 9.8$\times10^{3}$ & 4.25 & 4.25 & \textbf{4.25} & 4.25 \\
+\midrule
+Improvements &  & 0.0 $\%$  & 62.32 $\%$  & 70.1 $\%$  & \textbf{70.84} $\%$  & 70.11 $\%$  & 70.84 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in1}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (MSE test2 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 61.16 & 23.55 & 0.93 & \textbf{0.59} & 0.93 & 0.59 \\
+ & 504-24 & 60.82 & 22.32 & 0.92 & \textbf{0.52} & 0.92 & 0.52 \\
+ & 504-168 & 60.27 & 21.33 & 1.02 & 0.67 & 1.01 & \textbf{0.67} \\
+ & 504-504 & 60.82 & 23.04 & 1.23 & 0.87 & 1.22 & \textbf{0.87} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 2.74 & 2.35 & 1.31 & \textbf{1.30} & 1.31 & 1.30 \\
+ & 504-24 & 2.74 & 2.20 & 1.28 & \textbf{1.23} & 1.28 & 1.23 \\
+ & 504-168 & 2.54 & 3.24 & 1.97 & \textbf{1.94} & 1.97 & 1.94 \\
+ & 504-504 & 2.52 & 3.59 & 2.13 & \textbf{2.06} & 2.13 & 2.07 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 14.44 & \textbf{6.51} & 7.30 & 7.27 & 7.30 & 7.27 \\
+ & 504-24 & 19.60 & \textbf{6.02} & 6.77 & 6.72 & 6.77 & 6.72 \\
+ & 504-168 & 18.75 & \textbf{6.87} & 8.13 & 8.09 & 8.13 & 8.09 \\
+ & 504-504 & 17.87 & \textbf{6.99} & 8.29 & 8.26 & 8.28 & 8.25 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 3.6$\times10^6$ & 1.5$\times10^3$ & 4.30 & 4.30 & 4.30 & \textbf{4.30} \\
+ & 100-20 & 3.3$\times10^6$ & 5.6$\times10^3$ & 3.68 & 3.68 & 3.68 & \textbf{3.68} \\
+ & 100-100 & 3.3$\times10^6$ & 1.0$\times10^4$ & 4.30 & 4.30 & \textbf{4.30} & 4.30 \\
+\midrule
+Improvements &  & 0.0 $\%$  & 6.97 $\%$  & 70.62 $\%$  & \textbf{71.29} $\%$  & 70.63 $\%$  & 71.29 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in2}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (nMSE test1 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 49.28 & 4.7$\times10^{11}$ & 0.44 & \textbf{0.28} & 0.44 & 0.28 \\
+ & 504-24 & 39.93 & 4.8$\times10^{11}$ & 0.34 & \textbf{0.19} & 0.34 & 0.19 \\
+ & 504-168 & 52.56 & 5.4$\times10^{11}$ & 0.42 & 0.28 & 0.42 & \textbf{0.28} \\
+ & 504-504 & 47.95 & 2.2$\times10^11$ & 0.60 & 0.45 & 0.60 & \textbf{0.45} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 1.72 & 120.62 & 1.00 & \textbf{0.86} & 1.00 & 0.86 \\
+ & 504-24 & 0.60 & 38.68 & 0.31 & \textbf{0.28} & 0.31 & 0.28 \\
+ & 504-168 & 0.56 & 48.56 & 0.40 & 0.37 & 0.40 & \textbf{0.37} \\
+ & 504-504 & 0.49 & 50.18 & 0.40 & \textbf{0.37} & 0.40 & 0.37 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 0.72 & \textbf{0.00} & 0.32 & 0.31 & 0.32 & 0.31 \\
+ & 504-24 & 1.05 & \textbf{0.00} & 0.27 & 0.26 & 0.27 & 0.26 \\
+ & 504-168 & 1.36 & \textbf{0.00} & 0.31 & 0.30 & 0.31 & 0.30 \\
+ & 504-504 & 1.07 & \textbf{0.00} & 0.33 & 0.33 & 0.33 & 0.33 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 6.5$\times10^3$ & 2.2$\times10^3$ & 0.01 & 0.01 & 0.01 & \textbf{0.01} \\
+ & 100-20 & 5.4$\times10^3$ & 9.03 & 0.01 & 0.01 & 0.01 & \textbf{0.01} \\
+ & 100-100 & 5.4$\times10^3$ & 16.48 & 0.01 & 0.01 & \textbf{0.01} & 0.01 \\
+\midrule
+Improvements &  & 0.0 $\%$  & 2.4$\times10^11$ $\%$  & 74.11 $\%$  & \textbf{75.8} $\%$  & 74.11 $\%$  & 75.8 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in3}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{PatchTST} (nMSE test2 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 38.27 & 2.4$\times10^{12}$ & 0.48 & \textbf{0.30} & 0.48 & 0.30 \\
+ & 504-24 & 32.35 & 1.0$\times10^{12}$ & 0.36 & \textbf{0.19} & 0.36 & 0.19 \\
+ & 504-168 & 35.99 & 4.4$\times10^{11}$ & 0.43 & 0.27 & 0.43 & \textbf{0.27} \\
+ & 504-504 & 37.31 & 6.1$\times10^{11}$ & 0.61 & 0.43 & 0.61 & \textbf{0.43} \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 1.88 & 132.03 & 1.09 & \textbf{0.93} & 1.09 & 0.93 \\
+ & 504-24 & 0.61 & 38.45 & 0.30 & \textbf{0.28} & 0.30 & 0.28 \\
+ & 504-168 & 0.58 & 48.56 & 0.39 & 0.37 & 0.39 & \textbf{0.37} \\
+ & 504-504 & 0.53 & 50.17 & 0.40 & \textbf{0.37} & 0.40 & 0.37 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 0.70 & \textbf{0.00} & 0.31 & 0.30 & 0.31 & 0.30 \\
+ & 504-24 & 1.03 & \textbf{0.00} & 0.26 & 0.26 & 0.26 & 0.26 \\
+ & 504-168 & 1.15 & \textbf{0.00} & 0.30 & 0.30 & 0.30 & 0.30 \\
+ & 504-504 & 0.94 & \textbf{0.00} & 0.33 & 0.33 & 0.33 & 0.33 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 6.3$\times10^3$ & 2.2$\times10^3$ & 0.01 & 0.01 & 0.01 & \textbf{0.01} \\
+ & 100-20 & 5.6$\times10^3$ & 9.39 & 0.01 & 0.01 & 0.01 & \textbf{0.01} \\
+ & 100-100 & 5.6$\times10^3$ & 17.22 & 0.01 & 0.01 & \textbf{0.01} & 0.01 \\
+\midrule
+Improvements &  & 0.0 $\%$  & 7.2$\times10^{11}$ $\%$  & 74.1 $\%$  & \textbf{75.77} $\%$  & 74.1 $\%$  & 75.77 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in4}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{DLinear} (MSE test1 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 88.15 & 78.28 & 45.01 & 22.04 & 45.01 & \textbf{22.04} \\
+ & 504-24 & 20.92 & 18.55 & 17.00 & \textbf{11.18} & 17.00 & 11.19 \\
+ & 504-168 & 17.82 & 15.72 & 16.04 & \textbf{8.89} & 16.04 & 8.90 \\
+ & 504-504 & 23.06 & 20.34 & 21.09 & \textbf{14.54} & 21.08 & 14.63 \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 5.43 & 6.29 & 3.83 & \textbf{3.74} & 3.83 & 3.75 \\
+ & 504-24 & 3.34 & 4.34 & 3.00 & \textbf{2.94} & 3.00 & 2.94 \\
+ & 504-168 & 3.07 & 4.14 & 2.93 & 2.93 & \textbf{2.93} & 2.94 \\
+ & 504-504 & 3.19 & 4.32 & 3.09 & 3.12 & \textbf{3.09} & 3.13 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 16.69 & \textbf{11.59} & 13.28 & 13.36 & 13.28 & 13.37 \\
+ & 504-24 & 11.55 & \textbf{9.06} & 10.51 & 10.43 & 10.51 & 10.44 \\
+ & 504-168 & 9.57 & \textbf{7.96} & 9.43 & 9.29 & 9.43 & 9.29 \\
+ & 504-504 & 9.64 & \textbf{8.01} & 9.50 & 9.38 & 9.50 & 9.38 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 3.2$\times10^{6}$ & 1.3$\times10^{6}$ & 402.27 & 402.30 & \textbf{401.73} & 401.77 \\
+ & 100-20 & 1.2$\times10^{6}$ & 1.3$\times10^{6}$ & 368.62 & 368.57 & 368.52 & \textbf{368.47} \\
+ & 100-100 & 9.6$\times10^{5}$ & 9.7$\times10^{5}$ & 921.86 & 922.00 & \textbf{921.81} & 921.95 \\
+\midrule
+Improvements &  & 0.0 $\%$  & 4.82 $\%$  & 30.98 $\%$  & \textbf{39.52} $\%$  & 31.01 $\%$  & 39.44 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in5}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{DLinear} (MSE test2 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 9.14 & 60.96 & 2.74 & 1.49 & 2.74 & \textbf{1.49} \\
+ & 504-24 & 1.70 & 12.44 & 1.43 & \textbf{0.96} & 1.43 & 0.96 \\
+ & 504-168 & 1.39 & 10.67 & 1.29 & \textbf{0.83} & 1.29 & 0.83 \\
+ & 504-504 & 1.57 & 11.72 & 1.43 & \textbf{1.02} & 1.43 & 1.03 \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 4.84 & 6.32 & 3.44 & \textbf{3.36} & 3.44 & 3.36 \\
+ & 504-24 & 2.99 & 4.43 & 2.69 & \textbf{2.63} & 2.68 & 2.63 \\
+ & 504-168 & 2.73 & 4.21 & 2.61 & 2.61 & \textbf{2.61} & 2.62 \\
+ & 504-504 & 2.82 & 4.36 & 2.73 & 2.75 & \textbf{2.73} & 2.76 \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 15.43 & \textbf{10.90} & 12.01 & 12.08 & 12.01 & 12.08 \\
+ & 504-24 & 10.50 & \textbf{8.47} & 9.45 & 9.38 & 9.45 & 9.38 \\
+ & 504-168 & 9.21 & \textbf{7.65} & 9.08 & 8.94 & 9.08 & 8.94 \\
+ & 504-504 & 9.36 & \textbf{7.76} & 9.22 & 9.09 & 9.22 & 9.09 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 3.3$\times10^{6}$ & 1.3$\times10^{6}$ & 402.60 & 402.64 & \textbf{402.07} & 402.11 \\
+ & 100-20 & 1.3$\times10^{6}$ & 1.3$\times10^{6}$ & 368.69 & 368.64 & 368.59 & \textbf{368.54} \\
+ & 100-100 & 1.0$\times10^{6}$ & 1.0$\times10^6$ & 921.71 & 921.92 & \textbf{921.67} & 921.87 \\
+\midrule
+Improvements &  & 0.0 $\%$  & -996.47 $\%$  & 31.86 $\%$  & \textbf{40.66} $\%$  & 31.88 $\%$  & 40.59 $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in6}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{DLinear} (nMSE test1 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 5.78 & 4.1$\times10^{12}$ & 0.83 & 0.57 & 0.83 & \textbf{0.57} \\
+ & 504-24 & 0.60 & 2.9$\times10^{11}$ & 0.54 & 0.34 & 0.54 & \textbf{0.34} \\
+ & 504-168 & 0.63 & 4.2$\times10^{10}$ & 0.56 & \textbf{0.34} & 0.56 & 0.34 \\
+ & 504-504 & 0.79 & 4.8$\times10^{10}$ & 0.72 & \textbf{0.50} & 0.72 & 0.50 \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 1.98 & 237.45 & 1.67 & 1.64 & 1.67 & \textbf{1.64} \\
+ & 504-24 & 0.69 & 71.44 & 0.62 & 0.61 & 0.62 & \textbf{0.60} \\
+ & 504-168 & 0.58 & 62.52 & 0.55 & 0.54 & 0.55 & \textbf{0.54} \\
+ & 504-504 & 0.56 & 61.02 & 0.54 & 0.53 & 0.54 & \textbf{0.53} \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 0.90 & \textbf{0.00} & 0.48 & 0.48 & 0.48 & 0.48 \\
+ & 504-24 & 0.43 & \textbf{0.00} & 0.36 & 0.36 & 0.36 & 0.36 \\
+ & 504-168 & 0.35 & \textbf{0.00} & 0.34 & 0.34 & 0.34 & 0.34 \\
+ & 504-504 & 0.37 & \textbf{0.00} & 0.36 & 0.36 & 0.36 & 0.36 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 6.0$\times10^3$ & 1.9$\times10^{6}$ & 0.76 & 0.76 & 0.76 & \textbf{0.76} \\
+ & 100-20 & 2.1$\times10^3$ & 2.1$\times10^3$ & 0.62 & 0.62 & 0.62 & \textbf{0.62} \\
+ & 100-100 & 1.6$\times10^3$ & 1.6$\times10^3$ & 1.56 & 1.56 & 1.56 & \textbf{1.56} \\
+\midrule
+Improvements &  & 0.0 $\%$  & -8.6$\times10^{12}$ $\%$  & 34.29 $\%$  & 41.79 $\%$  & 34.28 $\%$  & \textbf{41.8} $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in7}
+\end{table}
+
+\begin{table}[h!]
+\caption{Ablation of RevIN components on \textsc{DLinear} (nMSE test2 results).}
+\vspace{0.2cm}
+\centering
+\scalebox{0.6}{
+\begin{tabular}{lccccccc}
+\toprule
+& &  &  & \multicolumn{2}{c}{RevIN (w/o $\alpha,\beta$)} & \multicolumn{2}{c}{RevIN} \\
+     \cmidrule(r){5-6} \cmidrule(r){7-8}
+ & L-H &  None & Standard Normalization& \thead{Standard BP} & \thead{Normalized BP} & \thead{Standard BP} & \thead{Normalized BP} \\
+\midrule
+\multirow{4}{*}{Electricity} & 168-24 & 4.92 & 2.2$\times10^{12}$ & 0.87 & 0.60 & 0.87 & \textbf{0.60} \\
+ & 504-24 & 0.63 & 7.4$\times10^{10}$ & 0.57 & 0.34 & 0.57 & \textbf{0.34} \\
+ & 504-168 & 0.64 & 3.1$\times10^{10}$  & 0.58 & \textbf{0.32} & 0.58 & 0.32 \\
+ & 504-504 & 0.82 & 4.5$\times10^{10}$ & 0.74 & \textbf{0.49} & 0.74 & 0.49 \\
+\midrule
+\multirow{4}{*}{Solar} & 168-24 & 2.11 & 254.75 & 1.80 & 1.77 & 1.80 & \textbf{1.77} \\
+ & 504-24 & 0.69 & 72.22 & 0.62 & 0.61 & 0.62 & \textbf{0.60} \\
+ & 504-168 & 0.58 & 62.65 & 0.55 & 0.54 & 0.55 & \textbf{0.54} \\
+ & 504-504 & 0.56 & 60.92 & 0.54 & 0.53 & 0.54 & \textbf{0.53} \\
+\midrule
+\multirow{4}{*}{Traffic} & 168-24 & 0.88 & \textbf{0.00} & 0.47 & 0.47 & 0.47 & 0.47 \\
+ & 504-24 & 0.42 & \textbf{0.00} & 0.35 & 0.35 & 0.35 & 0.35 \\
+ & 504-168 & 0.34 & \textbf{0.00} & 0.33 & 0.33 & 0.33 & 0.33 \\
+ & 504-504 & 0.37 & \textbf{0.00} & 0.36 & 0.36 & 0.36 & 0.36 \\
+\midrule
+\multirow{3}{*}{Synthetic} & 40-10 & 6.2$\times10^3$ & 2.0$\times10^{6}$ & 0.76 & 0.76 & 0.76 & \textbf{0.76} \\
+ & 100-20 & 2.2$\times10^3$ & 2.2$\times10^3$ & 0.62 & 0.62 & 0.62 & \textbf{0.62} \\
+ & 100-100 & 1.7$\times10^3$ & 1.7$\times10^3$ & 1.56 & 1.56 & 1.56 & \textbf{1.56} \\
+\midrule
+Improvements &  & 0.0 $\%$  & -4.3$\times10^{12}\%$  & 33.84 $\%$  & 42.11 $\%$  & 33.83 $\%$  & \textbf{42.12} $\%$  \\
+\bottomrule
+\end{tabular}}
+\label{tab:all_in8}
+\end{table}

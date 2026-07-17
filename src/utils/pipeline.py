@@ -19,7 +19,7 @@ class ForecastLoss(nn.Module):
         if self.name in {"nmse", "nmae"}:
             _, scale = normal_stats(context)
             error = error / (scale + self.eps)
-        elif self.name == "rmse":
+        elif self.name in {"rmse", "relative_mse"}:
             scale = context.mean(-1, keepdim=True).abs()
             error = error / (scale + self.eps)
         loss = error.abs() if self.name in {"mae", "nmae"} else error.square()
@@ -27,7 +27,9 @@ class ForecastLoss(nn.Module):
 
 
 def make_losses(training_loss):
-    names = ["mse", "nmse", "mae", "nmae", "rmse"]
+    names = ["mse", "nmse", "mae", "nmae", "relative_mse"]
+    if training_loss not in names:
+        names.append(training_loss)
     return ForecastLoss(training_loss), {name: ForecastLoss(name, "none") for name in names}
 
 
@@ -43,24 +45,64 @@ class TorchLearner:
         self.eval_losses = eval_losses
         self.optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    def fit(self, train_loader, valid_loaders, epochs, seed):
+    def fit(
+        self,
+        train_loader,
+        valid_loaders,
+        epochs,
+        seed,
+        valid_eval_freq=None,
+        logging_eval_freq=None,
+    ):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
-        history = {"train": [], "valid": {name: [] for name in valid_loaders}}
+        default_freq = max(1, len(train_loader))
+        valid_eval_freq = int(valid_eval_freq or default_freq)
+        logging_eval_freq = int(logging_eval_freq or valid_eval_freq)
+        if valid_eval_freq < 1 or logging_eval_freq < 1:
+            raise ValueError("evaluation frequencies must be positive")
+        if logging_eval_freq % valid_eval_freq:
+            raise ValueError("logging_eval_freq must be a multiple of valid_eval_freq")
+        history = {
+            "train": [],
+            "train_batch": [],
+            "valid": {name: [] for name in valid_loaders},
+        }
+        recent_losses = []
+        step = 0
+
+        def evaluate_interval(log=False):
+            if not recent_losses:
+                return
+            train_loss = float(np.mean(recent_losses))
+            history["train_batch"].append(
+                {"step": step, "loss": train_loss, "losses": {self.criterion.name: train_loss}}
+            )
+            recent_losses.clear()
+            valid_results = {}
+            for name, loader in valid_loaders.items():
+                values = self.evaluate(loader, keep_all=False)
+                history["valid"][name].append({"step": step, "losses": values})
+                valid_results[name] = values
+            if log:
+                print(f"step={step} train_interval={train_loss:.6g} valid={valid_results}")
+
         for _ in range(epochs):
             self.model.train()
-            epoch_losses = []
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 self.optimizer.zero_grad()
                 loss = self.criterion(self.model(x), y, x)
                 loss.backward()
                 self.optimizer.step()
-                epoch_losses.append(loss.item())
-            history["train"].append(float(np.mean(epoch_losses)))
-            for name, loader in valid_loaders.items():
-                history["valid"][name].append(self.evaluate(loader, keep_all=False))
+                value = loss.item()
+                step += 1
+                history["train"].append(value)
+                recent_losses.append(value)
+                if step % valid_eval_freq == 0:
+                    evaluate_interval(log=step % logging_eval_freq == 0)
+        evaluate_interval(log=True)
         return history
 
     def evaluate(self, loader, keep_all=True):

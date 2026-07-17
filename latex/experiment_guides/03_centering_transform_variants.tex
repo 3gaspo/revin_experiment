@@ -1,0 +1,53 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{RevIN Experiment 3: Centering and Transform Variants}
+\author{Thesis experiment note}
+\date{}
+\begin{document}\maketitle
+\section{Theoretical overview and goal}
+Mean centering assumes the look-back average is the appropriate location anchor
+for the future.  Last-value centering instead predicts changes around the most
+recent observation, which may better suit local trends.  The inverse hyperbolic
+sine transform
+\[
+ z=\operatorname{asinh}(x)
+\]
+is approximately linear near zero and logarithmic for large magnitudes, giving
+a reversible compression of heavy-tailed values before instance normalization.
+
+\goal{Test two lightweight changes to RevIN's inductive bias: a more local
+location anchor and a nonlinear magnitude compression, without introducing the
+cmIN or distribution-distance experiments.}
+
+\section{Implementation details}
+The variants use non-affine instance normalization and normalized MSE:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Method & Center & Transform \\
+\midrule
+\code{instance\_nmse} & Look-back mean & Identity \\
+\code{revin\_last\_nmse} & Last observation & Identity \\
+\code{revin\_arcsinh\_nmse} & Look-back mean & asinh \\
+\bottomrule
+\end{tabular}
+\end{center}
+Every transformation is inverted before data-space evaluation.  The same six
+datasets, seven settings, DLinear/PatchTST models, five seeds, optimizer, batch
+size, epoch budget, and validation frequency are used.  Configuration mapping
+is defined by \code{method\_args} in
+\code{src/slurm/run\_revin\_experiment.slurm}; layer behavior is in
+\code{src/utils/normalizations.py}.
+
+Tables are separate by model and test split.  They report ordinary MSE as mean
+$\pm$ sample standard deviation with explicit $\times10^m$ row scaling.  The
+baseline for both contrasts is \code{instance\_nmse}.
+
+\section{Interpretation}
+Last centering tests sensitivity to local level evolution; asinh tests
+sensitivity to tails and multiplicative scale.  A gain is evidence for that
+specific preprocessing bias, not a general solution to conditional shift.
+Results should be examined across datasets because either transform may remove
+useful absolute-level information.
+\end{document}
+
