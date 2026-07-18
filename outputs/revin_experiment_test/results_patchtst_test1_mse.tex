@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{MSE on test1. Seed uncertainty is the sample standard deviation.}
+\begin{tabular}{llcrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & patchtst\_none\_mse & patchtst\_standard\_mse & patchtst\_instance\_mse & patchtst\_instance\_nmse & patchtst\_revin\_mse & patchtst\_revin\_nmse & patchtst\_revin\_last\_nmse & patchtst\_revin\_arcsinh\_nmse \\
+\midrule
+electricity & 168--24 & $\times 10^{8}$ & 3.56 $\pm$ 0.01 & 3.39 $\pm$ 0.26 & 1.01 $\pm$ 0.07 & \textbf{0.76 $\pm$ 0.06} & 1.01 $\pm$ 0.07 & 0.76 $\pm$ 0.06 & 1.59 $\pm$ 0.27 & 0.78 $\pm$ 0.06 \\
+ & 720--168 & $\times 10^{7}$ & 35.82 $\pm$ 0.13 & 16.03 $\pm$ 1.17 & 5.54 $\pm$ 0.16 & \textbf{3.58 $\pm$ 1.91} & 5.54 $\pm$ 0.16 & 3.58 $\pm$ 1.91 & 8.08 $\pm$ 4.49 & 3.89 $\pm$ 1.96 \\
+\midrule
+solar & 168--24 & $\times 10^{1}$ & 10.32 $\pm$ 0.54 & 8.07 $\pm$ 1.52 & 6.80 $\pm$ 1.14 & 6.77 $\pm$ 1.14 & 6.80 $\pm$ 1.14 & 6.77 $\pm$ 1.14 & \textbf{4.21 $\pm$ 0.72} & 6.86 $\pm$ 1.14 \\
+ & 720--168 & $\times 10^{1}$ & 9.67 $\pm$ 0.47 & 5.24 $\pm$ 0.20 & 4.42 $\pm$ 0.28 & \textbf{4.31 $\pm$ 0.29} & 4.42 $\pm$ 0.28 & 4.31 $\pm$ 0.29 & 5.63 $\pm$ 0.33 & 4.59 $\pm$ 0.33 \\
+\bottomrule
+\end{tabular}
+\end{table}
