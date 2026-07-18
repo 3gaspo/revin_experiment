@@ -14,6 +14,7 @@
 TEST_MODE="${TEST_MODE:-true}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export TEST_MODE RUN_MODE
-source "$SCRIPT_DIR/src/slurm/run_revin_experiment.sh"
+PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
+cd "$PROJECT_ROOT"
+export PROJECT_ROOT TEST_MODE RUN_MODE
+source "$PROJECT_ROOT/src/slurm/run_revin_experiment.sh"
