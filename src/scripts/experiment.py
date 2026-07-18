@@ -106,6 +106,7 @@ def main(cfg: DictConfig):
         stream=sys.stdout,
         force=True,
     )
+    logging.captureWarnings(True)
     run_experiments(cfg)
 
 

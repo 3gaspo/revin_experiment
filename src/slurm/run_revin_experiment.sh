@@ -58,6 +58,7 @@ read -r -a MODEL_LIST <<< "${MODELS_SPEC//,/ }"
 read -r -a METHOD_LIST <<< "${METHODS_SPEC//,/ }"
 read -r -a SUMMARY_SUFFIX_LIST <<< "${SUMMARY_METHODS_SPEC//,/ }"
 read -r -a ORACLE_SUFFIX_LIST <<< "${ORACLE_METHODS_SPEC//,/ }"
+TOTAL_CONFIGURATIONS=$((${#DATASET_LIST[@]} * ${#SETTING_LIST[@]} * ${#MODEL_LIST[@]} * ${#METHOD_LIST[@]}))
 
 EPOCHS="${EPOCHS:-$DEFAULT_EPOCHS}"
 VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-$DEFAULT_VALID_EVAL_FREQ}"
@@ -70,26 +71,12 @@ SKIP_COMPLETED="${SKIP_COMPLETED:-false}"
 GENERATE_SUMMARY="${GENERATE_SUMMARY:-true}"
 STRICT_SUMMARY="${STRICT_SUMMARY:-true}"
 BASELINE_METHOD="${BASELINE_METHOD:-standard_mse}"
-SHARD_COUNT="${SHARD_COUNT:-1}"
-SHARD_INDEX="${SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 SEEDS_CSV="$(IFS=,; echo "${SEED_LIST[*]}")"
 
 case "$RUN_MODE" in
   train|tables|both) ;;
   *) log_error "RUN_MODE must be train, tables, or both (got $RUN_MODE)"; exit 2 ;;
 esac
-if ! [[ "$SHARD_COUNT" =~ ^[1-9][0-9]*$ ]]; then
-  log_error "SHARD_COUNT must be a positive integer"
-  exit 2
-fi
-if ! [[ "$SHARD_INDEX" =~ ^[0-9]+$ ]] || [ "$SHARD_INDEX" -ge "$SHARD_COUNT" ]; then
-  log_error "SHARD_INDEX must be in [0, SHARD_COUNT)"
-  exit 2
-fi
-if [ "$RUN_MODE" = both ] && [ "$SHARD_COUNT" -gt 1 ]; then
-  log_error "use RUN_MODE=train for a sharded array, then a dependent RUN_MODE=tables job"
-  exit 2
-fi
 if [ "$EVAL_STRIDE" != horizon ] && ! [[ "$EVAL_STRIDE" =~ ^[1-9][0-9]*$ ]]; then
   log_error "EVAL_STRIDE must be 'horizon' or a positive integer"
   exit 2
@@ -161,26 +148,24 @@ run_training() {
       if [ "$EVAL_STRIDE" != horizon ]; then stride="$EVAL_STRIDE"; fi
       for model in "${MODEL_LIST[@]}"; do
         for method in "${METHOD_LIST[@]}"; do
-          if [ $((configuration_index % SHARD_COUNT)) -eq "$SHARD_INDEX" ]; then
-            method_args "$method"
-            output="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}"
-            if [ "$SKIP_COMPLETED" = true ] && configuration_complete "$output"; then
-              log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method"
-            else
-              printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s method=%s seeds=%s batch_size=%s learning_rate=%s epochs=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
-                "$(date -Is)" "$configuration_index" "$dataset" "$L" "$H" "$model" "$method" "$SEEDS_CSV" \
-                "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
-              srun --ntasks=1 python -m scripts.experiment \
-                data.root="$data_root" data.name="$dataset" data.eval_stride="$stride" \
-                task.lags="$L" task.horizon="$H" model.name="$model" \
-                training.batch_size="$BATCH_SIZE" training.lr="$LEARNING_RATE" \
-                training.epochs="$EPOCHS" \
-                training.valid_eval_freq="$VALID_EVAL_FREQ" \
-                training.logging_eval_freq="$LOGGING_EVAL_FREQ" \
-                "${ARGS[@]}" seeds="[$SEEDS_CSV]" \
-                output.dir="$OUT_ROOT/$dataset/${L}_${H}" \
-                output.name="${model}_${method}"
-            fi
+          method_args "$method"
+          output="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}"
+          if [ "$SKIP_COMPLETED" = true ] && configuration_complete "$output"; then
+            log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method"
+          else
+            printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s method=%s seeds=%s batch_size=%s learning_rate=%s epochs=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
+              "$(date -Is)" "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS" "$dataset" "$L" "$H" "$model" "$method" "$SEEDS_CSV" \
+              "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
+            srun --ntasks=1 python -m scripts.experiment \
+              data.root="$data_root" data.name="$dataset" data.eval_stride="$stride" \
+              task.lags="$L" task.horizon="$H" model.name="$model" \
+              training.batch_size="$BATCH_SIZE" training.lr="$LEARNING_RATE" \
+              training.epochs="$EPOCHS" \
+              training.valid_eval_freq="$VALID_EVAL_FREQ" \
+              training.logging_eval_freq="$LOGGING_EVAL_FREQ" \
+              "${ARGS[@]}" seeds="[$SEEDS_CSV]" \
+              output.dir="$OUT_ROOT/$dataset/${L}_${H}" \
+              output.name="${model}_${method}"
           fi
           configuration_index=$((configuration_index + 1))
         done
@@ -248,7 +233,7 @@ run_tables() {
   done
 }
 
-log_section "job start kind=revin run_mode=$RUN_MODE test_mode=$TEST_MODE datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC shard=$SHARD_INDEX/$SHARD_COUNT"
+log_section "job start kind=revin run_mode=$RUN_MODE test_mode=$TEST_MODE datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC"
 if [ "$RUN_MODE" = train ] || [ "$RUN_MODE" = both ]; then run_training; fi
 if [ "$RUN_MODE" = tables ] || [ "$RUN_MODE" = both ]; then run_tables; fi
 log_section "job done kind=revin output=$OUT_ROOT"

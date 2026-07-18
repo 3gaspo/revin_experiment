@@ -387,6 +387,7 @@ def main():
         stream=sys.stdout,
         force=True,
     )
+    logging.captureWarnings(True)
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir")
     parser.add_argument("--output")

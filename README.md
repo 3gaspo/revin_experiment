@@ -93,29 +93,18 @@ Normal mode defaults to:
 - methods: all eight benchmark and appendix methods;
 - seeds: 1--5, with 10,000 epochs and validation/logging every 1,000 steps.
 
-The complete Cartesian product is too large for one sequential 23-hour job.
-The default sweep contains 672 dataset/setting/model/method configurations, so
-use one configuration per array element and build tables only after every task
-succeeds. For example, with at most 24 tasks running concurrently:
+After the smoke output is checked, set `TEST_MODE=false` in `revin.slurm` (or
+override it when submitting) and run the complete sequential sweep:
 
 ```bash
-train_job=$(sbatch --parsable --array=0-671%24 \
-  --export=ALL,TEST_MODE=false,RUN_MODE=train,SHARD_COUNT=672 \
-  revin.slurm)
-
-sbatch --dependency=afterok:$train_job \
-  --export=ALL,TEST_MODE=false,RUN_MODE=tables \
-  revin.slurm
+TEST_MODE=false sbatch revin.slurm
 ```
 
-Replace the `%24` throttle with a value allowed by the cluster quota. With sweep
-overrides, set `SHARD_COUNT` and the inclusive array range to the resulting
-configuration count (`datasets * settings * models * methods`); reproduction
-subsets therefore use their own matching count. A shard selects configurations
-deterministically by `configuration_index % SHARD_COUNT`; each selected configuration
-still runs all requested seeds. `RUN_MODE=both` remains convenient for smoke or
-a deliberately narrowed unsharded sweep. Set `SKIP_COMPLETED=true` only when
-resuming an otherwise identical sweep.
+The job loops over all 672 dataset/setting/model/method configurations and then
+builds the tables, producing one `.out` and one `.err`. If it later exceeds the
+cluster time limit, split first by model and then by dataset. `RUN_MODE=train`
+or `RUN_MODE=tables` can still separate computation from aggregation, and
+`SKIP_COMPLETED=true` resumes an otherwise identical sweep.
 
 ## Sweep overrides
 
@@ -155,8 +144,9 @@ elsewhere. The active models do not read pretrained weights.
 - `src/utils/results.py` validates completed seed outputs and creates LaTeX and
   JSON summaries. It is normally called by table mode rather than directly.
 
-Timestamped progress, validation, evaluation, and table messages are written
-to the Slurm `.out` file. The `.err` file is reserved for warnings and errors.
+Timestamped progress, validation, evaluation, table messages, and Python
+warnings are written to the Slurm `.out` file. The `.err` file is reserved for
+scheduler, shell, or Python failures.
 
 ## Result interpretation
 
