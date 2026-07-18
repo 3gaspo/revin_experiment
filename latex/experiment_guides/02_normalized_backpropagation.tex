@@ -36,12 +36,15 @@ Architecture, seed, batch composition, learning rate, and epoch budget are held
 fixed within every pair.  The project supports MSE, MAE, nMSE, nMAE, and
 relative MSE, but this paper comparison focuses on MSE versus nMSE.
 
-\textbf{Loss implementation:} \code{src/utils/losses.py}\\
+\textbf{Loss implementation:} \code{src/utils/pipeline.py}\\
 \textbf{Experiment orchestration:} \code{src/scripts/experiment.py}
 
 The normal sweep covers six datasets, seven settings, DLinear/PatchTST, and five
-seeds, with validation every 1,000 steps.  Final tables always use test MSE in
-data space, show sample standard deviations, and state the row multiplier.
+seeds, with validation every 1,000 steps and horizon-strided evaluation. Final
+tables always use test MSE in data space, show sample standard deviations, and
+state the row multiplier. Macro summaries give each dataset--setting pair equal
+weight and include a test-selected standard/instance oracle only as an
+optimistic reference.
 
 \section{Interpretation}
 An nMSE-trained model can win on data-space MSE because balanced gradients learn

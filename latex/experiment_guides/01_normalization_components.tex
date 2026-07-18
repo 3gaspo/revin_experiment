@@ -29,16 +29,20 @@ are in original data space.
 
 The complete sweep uses ETTh1, Electricity, Traffic, Solar, Weather, and
 Exchange Rate; seven $(L,H)$ settings; DLinear and PatchTST; five seeds; batch
-size 256; learning rate $10^{-5}$; and 10,000 epochs.  Validation and logging
-run every 1,000 optimizer steps.  Test mode uses Electricity/Solar, two
-settings, PatchTST, and seeds 1--2.
+size 256; learning rate $10^{-5}$; and 10,000 epochs.  The long-horizon setting
+is $(504,504)$. Validation and logging run every 1,000 optimizer steps, while
+evaluation windows use a horizon-sized stride. Training windows are sampled at
+random over users and dates. Test mode uses Electricity/Solar, two settings,
+PatchTST, seeds 1--2, and a short 20-epoch gate.
 
-\textbf{Implementation:} \code{src/utils/normalizations.py}\\
+\textbf{Implementation:} \code{src/utils/models.py}\\
 \textbf{Launcher:} \code{src/slurm/run\_revin\_experiment.slurm}
 
-One table is produced per model
-and test split, with seed mean $\pm$ sample standard deviation and an explicit
-row multiplier $\times10^m$.
+Run isolated test mode first. The full Cartesian product must then be sharded
+with \code{RUN\_MODE=train} and followed by a dependent
+\code{RUN\_MODE=tables} job. One table is produced per model and test split,
+with seed mean $\pm$ sample standard deviation and an explicit row multiplier
+$\times10^m$. JSON summaries also retain the variance of per-point losses.
 
 \section{Interpretation}
 The none--standard contrast measures global conditioning.  Standard--instance

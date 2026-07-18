@@ -16,8 +16,7 @@ is approximately linear near zero and logarithmic for large magnitudes, giving
 a reversible compression of heavy-tailed values before instance normalization.
 
 \goal{Test two lightweight changes to RevIN's inductive bias: a more local
-location anchor and a nonlinear magnitude compression, without introducing the
-cmIN or distribution-distance experiments.}
+location anchor and a nonlinear magnitude compression as appendix ablations.}
 
 \section{Implementation details}
 The variants use non-affine instance normalization and normalized MSE:
@@ -37,7 +36,7 @@ datasets, seven settings, DLinear/PatchTST models, five seeds, optimizer, batch
 size, epoch budget, and validation frequency are used.  Configuration mapping
 is defined by \code{method\_args} in
 \code{src/slurm/run\_revin\_experiment.slurm}; layer behavior is in
-\code{src/utils/normalizations.py}.
+\code{src/utils/models.py}.
 
 Tables are separate by model and test split.  They report ordinary MSE as mean
 $\pm$ sample standard deviation with explicit $\times10^m$ row scaling.  The
@@ -50,4 +49,3 @@ specific preprocessing bias, not a general solution to conditional shift.
 Results should be examined across datasets because either transform may remove
 useful absolute-level information.
 \end{document}
-

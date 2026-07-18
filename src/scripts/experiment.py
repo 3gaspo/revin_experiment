@@ -21,6 +21,7 @@ def summarize(losses):
             metric: {
                 "mean": values.float().mean().item(),
                 "std": values.float().std(unbiased=False).item(),
+                "variance": values.float().var(unbiased=False).item(),
                 "count": values.numel(),
             }
             for metric, values in metrics.items()

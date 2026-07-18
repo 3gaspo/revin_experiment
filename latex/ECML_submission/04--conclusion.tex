@@ -1,24 +1,20 @@
 \section{Conclusion} \label{conclu}
 
-We revisited Reversible Instance Normalization to clarify which of its components improve time-series forecasting and which distribution shifts it can address. Across three real-world datasets and a controlled synthetic dataset, instance normalization generally improved generalization to future periods and unseen series. However, these gains were not universal: standard normalization performed best on \textsc{Traffic}, showing that removing instance-level scale and offset can be detrimental when these statistics are informative and the initial distribution discrepancy is limited.
+Instance normalization is best understood as a conditional experimental choice,
+not a universal forecasting default. It removes look-back offset and scale,
+which can improve robustness when those quantities vary across dates or series
+without changing the normalized forecasting relationship. The same operation
+can be detrimental when absolute level and scale are predictive. Normalized
+backpropagation adds a separate effect by balancing gradient contributions from
+series with different scales, while RevIN's symmetric affine parameters must be
+judged independently.
 
-Our ablations further showed that RevIN's learnable symmetric affine transformation provides negligible benefit, whereas computing the training loss in normalized space consistently improves performance. This suggests that the main advantages of RevIN arise from aligning instance-level input statistics and balancing the contribution of differently scaled series during optimization.
-
-Our distributional analysis also qualifies the notion of alignment provided by instance normalization. Although it eliminates differences in first and second order statistics, it does not necessarily align higher-order structure, frequency content, or temporal dynamics. Moreover, RevIN assumes that the normalized relationship between look-back and horizon statistics can be learned as an approximately invariant shift. Our synthetic experiments show that an asymmetric, context-dependent denormalization can explicitly represent such shifts and outperform RevIN when this assumption holds. In real-world data, however, these shifts vary across instances and time.
-
-Overall, instance normalization should be viewed as a useful but lossy inductive bias rather than a general solution to distribution shift. Future normalization methods should preserve or selectively reintroduce predictive information from the original input statistics while adapting the denormalization mapping to the series and temporal context.
-
-% In this paper, we have investigated the role of instance normalization in time series forecasting. We have reviewed state of the art normalization strategies, in particular the popular \textit{Reversible Instance Normalization}. We have shown experimentally that input normalization and backpropagation in the normalized space are important components of the overall pipeline. However, we have also pointed out that the additional linear layer is not required, and that normalizing by instance on certain stationary datasets might be detrimental. More importantly, RevIN does not address all forms of heterogeneity. In particular, we emphasized the importance of modeling the input/output conditional distribution.
-
-% which RevIN does not due to its non-adaptative normalization and denormalization layers.
-
-% \cref{fig:examples} shows example predictions for the various normalization strategies.
-
-% \begin{figure}[t]
-% \centering
-% \includegraphics[width=0.78\linewidth]{Images/misc/rand_predictions.pdf}
-% \caption{Example prediction on \textsc{Electricity} for
-% $(L,H)=(168,24)$. Without normalization, \textsc{PatchTST} does not
-% converge; normalized-space training produces a smoother fit.}
-% \label{fig:examples}
-% \end{figure}
+Our expanded protocol tests these mechanisms across datasets, horizons,
+backbones, future dates, unseen series, and random seeds. Reporting seed
+uncertainty and within-run error variance is essential because small average
+gains may otherwise be indistinguishable from training variability. Finally,
+the standard-versus-RevIN oracle measures the headroom available from
+choosing normalization per setting, while remaining explicitly optimistic.
+Together, these analyses aim to replace the blanket question ``does RevIN
+work?'' with the more useful question ``under which data conditions does
+instance normalization help?''

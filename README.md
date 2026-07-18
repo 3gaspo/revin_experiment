@@ -1,6 +1,10 @@
 # RevIN experiment
 
-This is the compact, independent experiment extracted from TimeTensors for the normalization and normalized-loss study described in `latex/ECML_submission/`. It intentionally keeps a smaller data and training path while retaining the features needed to reproduce and extend the paper tables.
+This independent experiment studies **when instance normalization is useful**
+for univariate time-series forecasting. It first reproduces the earlier RevIN
+ablation after the code rewrite, then extends it across datasets, settings, and
+the DLinear/PatchTST backbones. Proposed extensions such as cmIN belong in a
+separate future experiment and are intentionally not implemented here.
 
 ## Layout
 
@@ -8,20 +12,29 @@ This is the compact, independent experiment extracted from TimeTensors for the n
 src/
   conf/config.yaml
   models/                 DLinear and PatchTST
-  scripts/experiment.py   Hydra experiment entrypoint
-  slurm/                  complete benchmark job
+  scripts/experiment.py   Hydra experiment entry point
+  slurm/                  smoke/full benchmark launcher
   utils/                  data, normalization, losses, training, plots, tables
-  tests/                  lightweight smoke checks
+  tests/                  lightweight checks
 latex/ECML_submission/    paper source
-datasets/                 remote CSV datasets
-weights/                  remote weights placeholder
-outputs/                  models, histories, figures, metrics, and tables
+latex/experiment_guides/  concise experiment protocols
+datasets/                 optional repo-local remote datasets
+weights/                  placeholder; unused by the current backbones
+outputs/                  runs, figures, metrics, summaries, and tables
 logs/                     Slurm/runtime logs
 ```
 
-Each dataset is read from `datasets/<name>/<name>.csv`; the first column is the date index and the remaining columns are user series. The chronological split is train/validation/test. With `data.indiv_split<1`, seen and unseen users produce `valid1/test1` and `valid2/test2` splits.
+Each dataset is read from `datasets/<name>/<name>.csv`; the first column is the
+date index and the remaining columns are user series. Dates are split
+chronologically. With `data.indiv_split<1`, seen and unseen users produce
+`valid1/test1` and `valid2/test2` splits.
 
-## Run
+Training already uses random user/window sampling. Evaluation enumerates windows
+with `data.eval_stride`, which defaults to the forecast horizon in the launcher.
+This avoids the former individual-ID sampling cost and highly overlapping test
+windows without introducing an unsupported sampling option.
+
+## One configuration
 
 From the project root:
 
@@ -35,36 +48,123 @@ python -m scripts.experiment \
   seeds='[1,2,3,4,5]' output.name=patchtst_revin_nmse
 ```
 
-`seeds` expands a configuration into isolated `seed_N/` runs. Each run saves its resolved config, model, history, criterion plot, losses, and JSON summary. The training history contains raw step losses, the mean train loss over every validation interval, and validation metrics at the same optimizer steps. The criterion plot shows the interval-average train curve and validation curve; set `training.plot_step_train_loss=true` to add raw step losses.
+`seeds` expands a configuration into isolated `seed_N/` runs. Each run saves its
+resolved config, model, history, criterion plot, losses, and JSON summary. The
+JSON reports the mean, population standard deviation, population variance, and
+count of per-point loss contributions. Training histories contain raw step
+losses, interval-average train losses, and validation metrics at the same
+optimizer steps.
 
-Losses are MSE, MAE, normalized MSE/MAE, and relative MSE. The legacy `rmse` name remains accepted as an alias for relative MSE in old configurations. Normalization methods used by the paper are no normalization, global standardization, non-affine instance normalization, affine RevIN, last-value centering, and the arcsinh RevIN transform.
+Losses are MSE, MAE, normalized MSE/MAE, and relative MSE. The legacy `rmse`
+name remains accepted as an alias for relative MSE. The benchmark methods are
+no/global normalization, non-affine instance normalization, affine RevIN,
+data-space versus normalized-space backpropagation, last-value centering, and
+the arcsinh transform.
 
-## Slurm benchmark
+## Required order on Slurm
 
-```bash
-sbatch src/slurm/run_revin_experiment.slurm
-TEST_MODE=true sbatch src/slurm/run_revin_experiment.slurm
-```
-
-Normal mode uses ETTh1, Electricity, Traffic, Solar, Weather, and Exchange Rate; settings 168--24, 168--168, 504--24, 504--168, 505--504, 720--168, and 720--720; DLinear and PatchTST; and five seeds. Test mode uses Electricity and Solar, settings 168--24 and 720--168, PatchTST only, and two seeds.
-
-The job creates one table per model and test split. Tables report seed means and sample standard deviations with two decimals and an explicit per-row `\times 10^{m}` multiplier, allowing the paper tables to be regenerated after adding datasets.
-
-The launcher uses the `a100` partition, one CPU per task, the one-word job name `revin`, and `logs/%x_%j.{out,err}` for Slurm output. Hydra logs to stdout only, so it does not create a second `experiment.log` file.
-
-## Lightweight check
-
-With the prepared project environment:
+First run the dependency-light local check in the prepared environment:
 
 ```bash
+python src/tests/results_test.py
 python src/tests/smoke_test.py
 ```
 
-The cmin and distribution-distance sections of the paper are retained as reference material but are outside the current experiment scope.
+Then submit the benchmark smoke gate:
+
+```bash
+TEST_MODE=true sbatch src/slurm/run_revin_experiment.slurm
+```
+
+Test mode keeps the previous Electricity/Solar, `168:24`/`720:168`, PatchTST,
+and seeds 1--2 grid, but defaults to 20 epochs with validation every 10 steps.
+It writes to `outputs/revin_experiment_test`, so it cannot overwrite or pollute
+the publication sweep. Inspect all `seed_N/results.json`, histories, plots, and
+the generated tables before continuing. Increase `EPOCHS` if 20 steps do not
+exercise validation on the cluster.
+
+Normal mode defaults to:
+
+- datasets: ETTh1, Electricity, Traffic, Solar, Weather, Exchange Rate;
+- settings: `168:24`, `168:168`, `504:24`, `504:168`, `504:504`, `720:168`,
+  `720:720`;
+- models: DLinear and PatchTST;
+- methods: all eight benchmark and appendix methods;
+- seeds: 1--5, with 10,000 epochs and validation/logging every 1,000 steps.
+
+The complete Cartesian product is too large for one sequential 23-hour job.
+The default grid contains 672 dataset/setting/model/method configurations, so
+use one configuration per array element and build tables only after every task
+succeeds. For example, with at most 24 tasks running concurrently:
+
+```bash
+train_job=$(sbatch --parsable --array=0-671%24 \
+  --export=ALL,RUN_MODE=train,SHARD_COUNT=672 \
+  src/slurm/run_revin_experiment.slurm)
+
+sbatch --dependency=afterok:$train_job \
+  --export=ALL,RUN_MODE=tables \
+  src/slurm/run_revin_experiment.slurm
+```
+
+Replace the `%24` throttle with a value allowed by the cluster quota. With grid
+overrides, set `SHARD_COUNT` and the inclusive array range to the resulting
+configuration count (`datasets * settings * models * methods`); reproduction
+subsets therefore use their own matching count. A shard selects configurations
+deterministically by `grid_index % SHARD_COUNT`; each selected configuration
+still runs all requested seeds. `RUN_MODE=both` remains convenient for smoke or
+a deliberately narrowed unsharded sweep. Set `SKIP_COMPLETED=true` only when
+resuming an otherwise identical grid.
+
+## Sweep overrides
+
+The launcher accepts space- or comma-separated environment overrides:
+
+```bash
+DATASETS="electricity traffic" \
+SETTINGS="168:24 504:168" \
+MODELS=patchtst \
+METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" \
+SEEDS="1 2 3" \
+EPOCHS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
+EVAL_STRIDE=horizon RUN_MODE=both \
+sbatch src/slurm/run_revin_experiment.slurm
+```
+
+Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `OUT_ROOT`, `DATA_ROOT`,
+`VENV_ACTIVATE`, `SUMMARY_METHODS`, `ORACLE_METHODS`, `BASELINE_METHOD`,
+`GENERATE_SUMMARY`, and `STRICT_SUMMARY`. `EVAL_STRIDE` may be `horizon` or a
+positive integer.
+
+If `DATA_ROOT` is unset, the launcher searches for each CSV under the repository
+`datasets/`, its parent `datasets/`, and the thesis workspace's shared
+`datasets/`. Set `DATA_ROOT=/cluster/path/to/datasets` when the checkout lives
+elsewhere. The active models do not read pretrained weights.
+
+## Result interpretation
+
+For every model and test split, table mode writes a row-wise LaTeX table with
+seed mean $\pm$ sample standard deviation and an explicit per-row
+`\times 10^m` multiplier. It also writes `summary_*.json` and `summary_*.tex`
+for global standardization, non-affine instance normalization, affine RevIN,
+and an oracle that chooses between global standardization and full affine RevIN
+using the lowest mean test MSE per dataset/setting.
+
+The summaries give every dataset/setting equal weight, use only seeds complete
+for every compared method, report seed-level macro standard deviation and
+variance, and retain the mean within-run loss variance. They also report mean
+per-setting relative improvement, which is more interpretable than raw MSE when
+datasets have different units. The test-selected oracle is deliberately
+optimistic and is only a reference for the potential value of choosing
+normalization per setting; it must not be presented as a deployable policy.
+
+The energy-distance and t-SNE diagnostics are computed separately in the
+`dataset_visu` notebook and may be imported into the paper after the forecasting
+results are reproduced. They are not part of this training launcher.
 
 ## Experiment guides
 
-Concise one-page notes for normalization components, normalized
-backpropagation, and centering/transform variants are under
-`latex/experiment_guides/`, with each compiled PDF beside its `.tex` source.
-Copies are also written to `outputs/pdf/`.
+The one-page protocols under `latex/experiment_guides/` cover normalization
+components, normalized backpropagation, and centering/transform appendix runs.
+Their PDFs are kept beside the sources; ignored convenience copies may also be
+written to `outputs/pdf/`.
