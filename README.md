@@ -13,7 +13,6 @@ src/
   conf/config.yaml
   models/                 DLinear and PatchTST
   scripts/experiment.py   train/evaluate one configuration (or a seed list)
-  slurm/*.slurm           scheduler resources and test/full switches
   slurm/*.sh              configuration enumeration, execution, and tables
   utils/                  data, normalization, losses, training, plots, tables
   tests/                  lightweight checks
@@ -23,6 +22,7 @@ datasets/                 optional repo-local remote datasets
 weights/                  placeholder; unused by the current backbones
 outputs/                  runs, figures, metrics, summaries, and tables
 logs/                     Slurm/runtime logs
+revin.slurm               only Slurm submission file
 ```
 
 Each dataset is read from `datasets/<name>/<name>.csv`; the first column is the
@@ -74,7 +74,7 @@ python src/tests/smoke_test.py
 Then submit the benchmark smoke gate:
 
 ```bash
-TEST_MODE=true sbatch src/slurm/run_revin_experiment.slurm
+TEST_MODE=true sbatch revin.slurm
 ```
 
 Test mode keeps the previous Electricity/Solar, `168:24`/`720:168`, PatchTST,
@@ -101,11 +101,11 @@ succeeds. For example, with at most 24 tasks running concurrently:
 ```bash
 train_job=$(sbatch --parsable --array=0-671%24 \
   --export=ALL,TEST_MODE=false,RUN_MODE=train,SHARD_COUNT=672 \
-  src/slurm/run_revin_experiment.slurm)
+  revin.slurm)
 
 sbatch --dependency=afterok:$train_job \
   --export=ALL,TEST_MODE=false,RUN_MODE=tables \
-  src/slurm/run_revin_experiment.slurm
+  revin.slurm
 ```
 
 Replace the `%24` throttle with a value allowed by the cluster quota. With sweep
@@ -129,7 +129,7 @@ METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" 
 SEEDS="1 2 3" \
 EPOCHS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
 EVAL_STRIDE=horizon TEST_MODE=false RUN_MODE=both \
-sbatch src/slurm/run_revin_experiment.slurm
+sbatch revin.slurm
 ```
 
 Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `OUT_ROOT`, `DATA_ROOT`,
@@ -144,7 +144,7 @@ elsewhere. The active models do not read pretrained weights.
 
 ## Executable files
 
-- `src/slurm/run_revin_experiment.slurm` is the thin Slurm front end. Edit its
+- `revin.slurm` is the only file submitted with `sbatch`. Edit its
   partition, time limit, resources, `TEST_MODE`, and `RUN_MODE`.
 - `src/slurm/run_revin_experiment.sh` resolves data, enumerates the requested
   configurations, launches one Python process per configuration, and builds

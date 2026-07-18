@@ -36,7 +36,7 @@ random over users and dates. Test mode uses Electricity/Solar, two settings,
 PatchTST, seeds 1--2, and a short 20-epoch gate.
 
 \textbf{Implementation:} \code{src/utils/models.py}\\
-\textbf{Launcher:} \code{src/slurm/run\_revin\_experiment.slurm}
+\textbf{Launcher:} \code{revin.slurm}
 
 Run isolated test mode first. The full Cartesian product must then be sharded
 with \code{RUN\_MODE=train} and followed by a dependent

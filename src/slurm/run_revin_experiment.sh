@@ -1,6 +1,6 @@
 #!/bin/bash
 # Enumerate RevIN experiment configurations, run training, and build result tables.
-# Submit run_revin_experiment.slurm; source this implementation only for local debugging.
+# Submit ../../revin.slurm; source this implementation only for local debugging.
 set -euo pipefail
 
 log() { printf '%s %s\n' "$(date -Is)" "$*"; }

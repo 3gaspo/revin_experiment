@@ -10,10 +10,10 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4000
 
-# Slurm front end: edit scheduler resources and the smoke/full switch here.
+# Submit this file from the project root. Edit resources and the smoke/full switch here.
 TEST_MODE="${TEST_MODE:-true}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TEST_MODE RUN_MODE
-source "$SCRIPT_DIR/run_revin_experiment.sh"
+source "$SCRIPT_DIR/src/slurm/run_revin_experiment.sh"
