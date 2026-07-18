@@ -77,12 +77,13 @@ Then submit the benchmark smoke gate:
 TEST_MODE=true sbatch revin.slurm
 ```
 
-Test mode keeps the previous Electricity/Solar, `168:24`/`720:168`, PatchTST,
-and seeds 1--2 sweep, but defaults to 20 epochs with validation every 10 steps.
-It writes to `outputs/revin_experiment_test`, so it cannot overwrite or pollute
-the publication sweep. Inspect all `seed_N/results.json`, histories, plots, and
-the generated tables before continuing. Increase `EPOCHS` if 20 steps do not
-exercise validation on the cluster.
+Test mode uses Electricity/Solar, `168:24`/`720:168`, PatchTST, and seeds 1--2.
+It compares only global standardization and non-affine instance normalization,
+each with MSE and nMSE loss: 16 configurations in total. Each run uses 1,000
+epochs with validation and progress logging every 100 steps. Outputs go to
+`outputs/revin_experiment_test`, so they cannot overwrite or pollute the
+publication sweep. Inspect all `seed_N/results.json`, histories, plots, and the
+generated tables before continuing.
 
 Normal mode defaults to:
 

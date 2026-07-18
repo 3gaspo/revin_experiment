@@ -26,22 +26,22 @@ if [ "$TEST_MODE" = true ]; then
   DEFAULT_SETTINGS="168:24 720:168"
   DEFAULT_SEEDS="1 2"
   DEFAULT_MODELS="patchtst"
-  DEFAULT_EPOCHS=20
-  DEFAULT_VALID_EVAL_FREQ=10
-  DEFAULT_LOGGING_EVAL_FREQ=10
+  DEFAULT_METHODS="standard_mse standard_nmse instance_mse instance_nmse"
+  DEFAULT_EPOCHS=1000
+  DEFAULT_VALID_EVAL_FREQ=100
+  DEFAULT_LOGGING_EVAL_FREQ=100
   DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment_test"
 else
   DEFAULT_DATASETS="etth1 electricity traffic solar weather exchange_rate"
   DEFAULT_SETTINGS="168:24 168:168 504:24 504:168 504:504 720:168 720:720"
   DEFAULT_SEEDS="1 2 3 4 5"
   DEFAULT_MODELS="dlinear patchtst"
+  DEFAULT_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
   DEFAULT_EPOCHS=10000
   DEFAULT_VALID_EVAL_FREQ=1000
   DEFAULT_LOGGING_EVAL_FREQ=1000
   DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment"
 fi
-
-DEFAULT_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
 DATASETS_SPEC="${DATASETS:-$DEFAULT_DATASETS}"
 SETTINGS_SPEC="${SETTINGS:-$DEFAULT_SETTINGS}"
 SEEDS_SPEC="${SEEDS:-$DEFAULT_SEEDS}"
@@ -110,6 +110,7 @@ method_args() {
   case "$1" in
     none_mse) ARGS=(normalization.name=none '~normalization.kwargs.affine' training.loss=mse) ;;
     standard_mse) ARGS=(normalization.name=standard '~normalization.kwargs.affine' training.loss=mse) ;;
+    standard_nmse) ARGS=(normalization.name=standard '~normalization.kwargs.affine' training.loss=nmse) ;;
     instance_mse) ARGS=(normalization.name=revin normalization.kwargs.affine=false training.loss=mse) ;;
     instance_nmse) ARGS=(normalization.name=revin normalization.kwargs.affine=false training.loss=nmse) ;;
     revin_mse) ARGS=(normalization.name=revin normalization.kwargs.affine=true training.loss=mse) ;;
