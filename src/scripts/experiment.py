@@ -2,6 +2,7 @@
 
 import json
 import logging
+import sys
 from pathlib import Path
 from time import perf_counter
 
@@ -102,6 +103,7 @@ def main(cfg: DictConfig):
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s | %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
+        stream=sys.stdout,
         force=True,
     )
     run_experiments(cfg)

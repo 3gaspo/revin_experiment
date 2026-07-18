@@ -155,6 +155,9 @@ elsewhere. The active models do not read pretrained weights.
 - `src/utils/results.py` validates completed seed outputs and creates LaTeX and
   JSON summaries. It is normally called by table mode rather than directly.
 
+Timestamped progress, validation, evaluation, and table messages are written
+to the Slurm `.out` file. The `.err` file is reserved for warnings and errors.
+
 ## Result interpretation
 
 For every model and test split, table mode writes a row-wise LaTeX table with

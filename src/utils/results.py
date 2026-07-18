@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import re
+import sys
 from collections import Counter
 from itertools import product
 from pathlib import Path
@@ -383,6 +384,7 @@ def main():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s | %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
+        stream=sys.stdout,
         force=True,
     )
     parser = argparse.ArgumentParser()
