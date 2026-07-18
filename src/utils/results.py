@@ -2,12 +2,16 @@
 
 import argparse
 import json
+import logging
 import math
 import re
 from collections import Counter
 from itertools import product
 from pathlib import Path
 from statistics import fmean, stdev, variance
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def normalise_setting(setting):
@@ -375,6 +379,12 @@ def _csv_arg(value):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s | %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        force=True,
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment_dir")
     parser.add_argument("--output")
@@ -406,7 +416,7 @@ def main():
         args.decimals,
         settings,
     )
-    print(output)
+    LOGGER.info("wrote table path=%s", output)
     if args.summary_output:
         summary_outputs = generate_average_summary(
             args.experiment_dir,
@@ -421,7 +431,8 @@ def main():
             [int(seed) for seed in _csv_arg(args.expected_seeds) or []],
             args.strict_summary,
         )
-        print(*summary_outputs, sep="\n")
+        for summary_output in summary_outputs:
+            LOGGER.info("wrote summary path=%s", summary_output)
 
 
 if __name__ == "__main__":

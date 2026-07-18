@@ -1,5 +1,6 @@
 """Losses and the training/evaluation loop."""
 
+import logging
 import random
 
 import numpy as np
@@ -7,6 +8,9 @@ import torch
 from torch import nn
 
 from utils.models import normal_stats
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ForecastLoss(nn.Module):
@@ -86,7 +90,9 @@ class TorchLearner:
                 history["valid"][name].append({"step": step, "losses": values})
                 valid_results[name] = values
             if log:
-                print(f"step={step} train_interval={train_loss:.6g} valid={valid_results}")
+                LOGGER.info(
+                    "step=%s train_interval=%.6g valid=%s", step, train_loss, valid_results
+                )
 
         for _ in range(epochs):
             self.model.train()

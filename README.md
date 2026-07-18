@@ -12,8 +12,9 @@ separate future experiment and are intentionally not implemented here.
 src/
   conf/config.yaml
   models/                 DLinear and PatchTST
-  scripts/experiment.py   Hydra experiment entry point
-  slurm/                  smoke/full benchmark launcher
+  scripts/experiment.py   train/evaluate one configuration (or a seed list)
+  slurm/*.slurm           scheduler resources and test/full switches
+  slurm/*.sh              configuration enumeration, execution, and tables
   utils/                  data, normalization, losses, training, plots, tables
   tests/                  lightweight checks
 latex/ECML_submission/    paper source
@@ -77,7 +78,7 @@ TEST_MODE=true sbatch src/slurm/run_revin_experiment.slurm
 ```
 
 Test mode keeps the previous Electricity/Solar, `168:24`/`720:168`, PatchTST,
-and seeds 1--2 grid, but defaults to 20 epochs with validation every 10 steps.
+and seeds 1--2 sweep, but defaults to 20 epochs with validation every 10 steps.
 It writes to `outputs/revin_experiment_test`, so it cannot overwrite or pollute
 the publication sweep. Inspect all `seed_N/results.json`, histories, plots, and
 the generated tables before continuing. Increase `EPOCHS` if 20 steps do not
@@ -93,28 +94,28 @@ Normal mode defaults to:
 - seeds: 1--5, with 10,000 epochs and validation/logging every 1,000 steps.
 
 The complete Cartesian product is too large for one sequential 23-hour job.
-The default grid contains 672 dataset/setting/model/method configurations, so
+The default sweep contains 672 dataset/setting/model/method configurations, so
 use one configuration per array element and build tables only after every task
 succeeds. For example, with at most 24 tasks running concurrently:
 
 ```bash
 train_job=$(sbatch --parsable --array=0-671%24 \
-  --export=ALL,RUN_MODE=train,SHARD_COUNT=672 \
+  --export=ALL,TEST_MODE=false,RUN_MODE=train,SHARD_COUNT=672 \
   src/slurm/run_revin_experiment.slurm)
 
 sbatch --dependency=afterok:$train_job \
-  --export=ALL,RUN_MODE=tables \
+  --export=ALL,TEST_MODE=false,RUN_MODE=tables \
   src/slurm/run_revin_experiment.slurm
 ```
 
-Replace the `%24` throttle with a value allowed by the cluster quota. With grid
+Replace the `%24` throttle with a value allowed by the cluster quota. With sweep
 overrides, set `SHARD_COUNT` and the inclusive array range to the resulting
 configuration count (`datasets * settings * models * methods`); reproduction
 subsets therefore use their own matching count. A shard selects configurations
-deterministically by `grid_index % SHARD_COUNT`; each selected configuration
+deterministically by `configuration_index % SHARD_COUNT`; each selected configuration
 still runs all requested seeds. `RUN_MODE=both` remains convenient for smoke or
 a deliberately narrowed unsharded sweep. Set `SKIP_COMPLETED=true` only when
-resuming an otherwise identical grid.
+resuming an otherwise identical sweep.
 
 ## Sweep overrides
 
@@ -127,7 +128,7 @@ MODELS=patchtst \
 METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" \
 SEEDS="1 2 3" \
 EPOCHS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
-EVAL_STRIDE=horizon RUN_MODE=both \
+EVAL_STRIDE=horizon TEST_MODE=false RUN_MODE=both \
 sbatch src/slurm/run_revin_experiment.slurm
 ```
 
@@ -137,9 +138,22 @@ Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `OUT_ROOT`, `DATA_ROOT`,
 positive integer.
 
 If `DATA_ROOT` is unset, the launcher searches for each CSV under the repository
-`datasets/`, its parent `datasets/`, and the thesis workspace's shared
-`datasets/`. Set `DATA_ROOT=/cluster/path/to/datasets` when the checkout lives
+`datasets/`, its parent `datasets/`, and one additional shared-parent candidate.
+Set `DATA_ROOT=/cluster/path/to/datasets` when the checkout lives
 elsewhere. The active models do not read pretrained weights.
+
+## Executable files
+
+- `src/slurm/run_revin_experiment.slurm` is the thin Slurm front end. Edit its
+  partition, time limit, resources, `TEST_MODE`, and `RUN_MODE`.
+- `src/slurm/run_revin_experiment.sh` resolves data, enumerates the requested
+  configurations, launches one Python process per configuration, and builds
+  aggregate tables. It logs every parameter that distinguishes adjacent runs.
+- `src/scripts/experiment.py` is the Hydra training/evaluation entry point. It
+  expands `seeds`, writes one isolated directory per seed, and timestamps the
+  training and validation messages.
+- `src/utils/results.py` validates completed seed outputs and creates LaTeX and
+  JSON summaries. It is normally called by table mode rather than directly.
 
 ## Result interpretation
 
