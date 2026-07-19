@@ -37,8 +37,11 @@ def run_experiment(cfg: DictConfig):
     output.mkdir(parents=True, exist_ok=True)
     OmegaConf.save(cfg, output / "config.yaml", resolve=True)
 
-    loaders, stats, dim = build_loaders(
+    loaders, stats, dim, dataset_metadata = build_loaders(
         cfg.data, cfg.task.lags, cfg.task.horizon, cfg.training.batch_size, cfg.seed
+    )
+    (output / "dataset_config.json").write_text(
+        json.dumps(dataset_metadata, indent=2), encoding="utf-8"
     )
     model = build_model(
         cfg.model, cfg.normalization, cfg.task.lags, cfg.task.horizon, dim, stats

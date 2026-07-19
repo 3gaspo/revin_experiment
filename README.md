@@ -30,6 +30,20 @@ date index and the remaining columns are user series. Dates are split
 chronologically. With `data.indiv_split<1`, seen and unseen users produce
 `valid1/test1` and `valid2/test2` splits.
 
+A sibling `datasets/<name>/config.json` is loaded automatically. Shared
+`drop_users` entries are zero-based positions among the original value columns;
+additional RevIN-only exclusions may be placed under a `revin` object. The two
+lists and any `data.drop_users` Hydra additions are merged, so a run cannot
+silently re-enable a dataset-level exclusion. Set `data.config_path` only to use
+an explicit JSON file or directory. Every seed output records the effective
+path, applied indices, dropped column names, and retained-user count in
+`dataset_config.json`.
+
+This is a curated exclusion list, not automatic constant-window detection. A
+user omitted from the JSON may still contain a constant look-back and destabilize
+nMSE; the constant-user policy should be evaluated separately before the full
+normalized-loss sweep.
+
 Training already uses random user/window sampling. Evaluation enumerates windows
 with `data.eval_stride`, which defaults to the forecast horizon in the launcher.
 This avoids the former individual-ID sampling cost and highly overlapping test
@@ -50,7 +64,8 @@ python -m scripts.experiment \
 ```
 
 `seeds` expands a configuration into isolated `seed_N/` runs. Each run saves its
-resolved config, model, history, criterion plot, losses, and JSON summary. The
+resolved config, applied dataset config, model, history, criterion plot, losses,
+and JSON summary. The
 JSON reports the mean, population standard deviation, population variance, and
 count of per-point loss contributions. Training histories contain raw step
 losses, interval-average train losses, and validation metrics at the same

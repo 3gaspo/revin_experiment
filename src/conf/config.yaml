@@ -12,6 +12,8 @@ hydra:
 data:
   root: datasets
   name: electricity
+  # A sibling config.json is loaded automatically. These are additive run-only exclusions.
+  config_path: null
   drop_users: []
   date_splits: [0.6, 0.2, 0.2]
   indiv_split: 0.8

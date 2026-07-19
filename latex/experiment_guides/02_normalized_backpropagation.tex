@@ -36,6 +36,11 @@ Architecture, seed, batch composition, learning rate, and epoch budget are held
 fixed within every pair.  The project supports MSE, MAE, nMSE, nMAE, and
 relative MSE, but this paper comparison focuses on MSE versus nMSE.
 
+Before splitting, the loader automatically applies the sibling dataset
+\code{config.json}: top-level and \code{revin} user exclusions are combined with
+run-specific additions and recorded in each seed directory. This curated list
+does not replace the separate constant-window audit required by nMSE.
+
 \textbf{Loss implementation:} \code{src/utils/pipeline.py}\\
 \textbf{Experiment orchestration:} \code{src/scripts/experiment.py}
 
