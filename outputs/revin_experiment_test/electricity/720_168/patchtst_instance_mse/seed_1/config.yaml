@@ -21,12 +21,13 @@ normalization:
     affine: false
 training:
   batch_size: 256
-  epochs: 1000
+  epochs: 2000
+  steps: 2000
   lr: 1.0e-05
   loss: mse
   device: gpu
-  valid_eval_freq: 100
-  logging_eval_freq: 100
+  valid_eval_freq: 200
+  logging_eval_freq: 200
   plot_step_train_loss: false
 seed: 1
 seeds: null
