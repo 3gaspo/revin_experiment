@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{MSE on test1. Seed uncertainty is the sample standard deviation.}
+\begin{tabular}{llcrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & patchtst\_standard\_mse & patchtst\_standard\_nmse & patchtst\_instance\_mse & patchtst\_instance\_nmse \\
+\midrule
+electricity & 168--24 & $\times 10^{7}$ & 2.45 $\pm$ 0.37 & 45.66 $\pm$ 1.38 & \textbf{0.94 $\pm$ 0.14} & 2.70 $\pm$ 1.33 \\
+ & 720--168 & $\times 10^{7}$ & 4.30 $\pm$ 1.25 & 28.97 $\pm$ 2.35 & \textbf{1.12 $\pm$ 0.05} & 2.88 $\pm$ 2.29 \\
+\midrule
+solar & 168--24 & $\times 10^{1}$ & 1.70 $\pm$ 0.11 & 1.87 $\pm$ 0.13 & \textbf{1.53 $\pm$ 0.12} & 1.53 $\pm$ 0.13 \\
+ & 720--168 & $\times 10^{1}$ & 2.18 $\pm$ 0.10 & 2.21 $\pm$ 0.13 & \textbf{2.11 $\pm$ 0.08} & 2.11 $\pm$ 0.11 \\
+\bottomrule
+\end{tabular}
+\end{table}

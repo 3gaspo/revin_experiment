@@ -1,0 +1,34 @@
+data:
+  root: /home/h61084/codes/revin_experiment/datasets
+  name: electricity
+  drop_users: []
+  date_splits:
+  - 0.6
+  - 0.2
+  - 0.2
+  indiv_split: 0.8
+  eval_stride: 24
+task:
+  lags: 168
+  horizon: 24
+model:
+  name: patchtst
+  kwargs: {}
+normalization:
+  name: revin
+  kwargs:
+    affine: false
+training:
+  batch_size: 256
+  epochs: 1000
+  lr: 1.0e-05
+  loss: mse
+  device: gpu
+  valid_eval_freq: 100
+  logging_eval_freq: 100
+  plot_step_train_loss: false
+seed: 2
+seeds: null
+output:
+  dir: /home/h61084/codes/revin_experiment/outputs/revin_experiment_test/electricity/168_24
+  name: patchtst_instance_mse/seed_2
