@@ -1,6 +1,7 @@
 data:
   root: /home/h61084/codes/revin_experiment/datasets
   name: solar
+  config_path: null
   drop_users: []
   date_splits:
   - 0.6

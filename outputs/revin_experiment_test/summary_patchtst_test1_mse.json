@@ -10,18 +10,18 @@
   "baseline_method": "patchtst_standard_mse",
   "methods": {
     "patchtst_standard_mse": {
-      "macro_mean": 16882733.706516027,
-      "seed_std": 4062367.5344870095,
-      "seed_variance": 16502829985254.064,
-      "mean_within_run_loss_variance": 3.480998365511054e+17,
+      "macro_mean": 23324317.956516027,
+      "seed_std": 7778729.504019192,
+      "seed_variance": 60508632696698.67,
+      "mean_within_run_loss_variance": 7.171109024987903e+17,
       "mean_relative_improvement_percent": 0.0
     },
     "patchtst_instance_nmse": {
-      "macro_mean": 13970576.741693854,
-      "seed_std": 9041096.710463628,
-      "seed_variance": 81741429727956.23,
-      "mean_within_run_loss_variance": 6.48871779200142e+17,
-      "mean_relative_improvement_percent": 8.914639497145135
+      "macro_mean": 2993139.6166938543,
+      "seed_std": 106717.73157252885,
+      "seed_variance": 11388674231.986322,
+      "mean_within_run_loss_variance": 2.3550186689137256e+16,
+      "mean_relative_improvement_percent": 46.56553863383704
     }
   },
   "oracle": {
@@ -29,10 +29,10 @@
     "candidates": [
       "patchtst_standard_mse"
     ],
-    "macro_mean": 16882733.706516027,
-    "seed_std": 4062367.5344870095,
-    "seed_variance": 16502829985254.064,
-    "mean_within_run_loss_variance": 3.480998365511054e+17,
+    "macro_mean": 23324317.956516027,
+    "seed_std": 7778729.504019192,
+    "seed_variance": 60508632696698.67,
+    "mean_within_run_loss_variance": 7.171109024987903e+17,
     "mean_relative_improvement_percent": 0.0,
     "selection_counts": {
       "patchtst_standard_mse": 4
