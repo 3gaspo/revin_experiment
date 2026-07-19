@@ -18,7 +18,7 @@ src/
   tests/                  lightweight checks
 latex/ECML_submission/    paper source
 latex/experiment_guides/  concise experiment protocols
-datasets/                 optional repo-local remote datasets
+datasets/                 tracked configs and optional repo-local CSVs
 weights/                  placeholder; unused by the current backbones
 outputs/                  runs, figures, metrics, summaries, and tables
 logs/                     Slurm/runtime logs
@@ -39,6 +39,10 @@ an explicit JSON file or directory. Every seed output records the effective
 path, applied indices, dropped column names, and retained-user count in
 `dataset_config.json`.
 
+The repository tracks the curated Electricity configuration while leaving its
+CSV ignored. It includes every currently identified user with a constant run of
+at least 168 samples, including source column 245 found by the smoke audit.
+
 This is a curated exclusion list, not automatic constant-window detection. A
 user omitted from the JSON may still contain a constant look-back and destabilize
 nMSE; the constant-user policy should be evaluated separately before the full
@@ -58,7 +62,7 @@ export PYTHONPATH=src
 python -m scripts.experiment \
   data.name=electricity task.lags=168 task.horizon=24 \
   model.name=patchtst normalization.name=revin \
-  training.loss=nmse training.epochs=10000 \
+  training.loss=nmse training.epochs=10000 training.steps=10000 \
   training.valid_eval_freq=1000 training.logging_eval_freq=1000 \
   seeds='[1,2,3,4,5]' output.name=patchtst_revin_nmse
 ```
@@ -89,38 +93,47 @@ python src/tests/smoke_test.py
 Then submit the benchmark smoke gate:
 
 ```bash
-TEST_MODE=true sbatch revin.slurm
+EXPERIMENT_MODE=test sbatch revin.slurm
 ```
 
 Test mode uses Electricity/Solar, `168:24`/`720:168`, PatchTST, and seeds 1--2.
 It compares only global standardization and non-affine instance normalization,
-each with MSE and nMSE loss: 16 configurations in total. Each run uses 1,000
-epochs with validation and progress logging every 100 steps. Outputs go to
+each with MSE and nMSE loss: 16 configurations in total. Each run uses exactly
+2,000 optimizer steps with validation and progress logging every 200 steps. Outputs go to
 `outputs/revin_experiment_test`, so they cannot overwrite or pollute the
 publication sweep. Inspect all `seed_N/results.json`, histories, plots, and the
 generated tables before continuing.
 
-Normal mode defaults to:
+The two publication profiles share `outputs/revin_experiment`:
 
-- datasets: ETTh1, Electricity, Traffic, Solar, Weather, Exchange Rate;
-- settings: `168:24`, `168:168`, `504:24`, `504:168`, `504:504`, `720:168`,
-  `720:720`;
-- models: DLinear and PatchTST;
-- methods: all eight benchmark and appendix methods;
-- seeds: 1--5, with 10,000 epochs and validation/logging every 1,000 steps.
+- `small`: Traffic, Electricity, and Solar; all seven settings; PatchTST; the
+  six core methods (`none_mse`, `standard_mse`, `instance_mse`,
+  `instance_nmse`, `revin_mse`, `revin_nmse`); seeds 1--5; exactly 10,000
+  optimizer steps. This is 126 configurations.
+- `large`: ETTh1, Electricity, Traffic, Solar, Weather, and Exchange Rate; all
+  seven settings; DLinear and PatchTST; all nine loss/normalization methods,
+  including `standard_nmse`, last-value centering, and arcsinh; seeds 1--5;
+  exactly 10,000 optimizer steps. This is 756 configurations.
 
-After the smoke output is checked, set `TEST_MODE=false` in `revin.slurm` (or
-override it when submitting) and run the complete sequential sweep:
+Run the core study first, then extend it:
 
 ```bash
-TEST_MODE=false sbatch revin.slurm
+EXPERIMENT_MODE=small sbatch revin.slurm
+EXPERIMENT_MODE=large sbatch revin.slurm
 ```
 
-The job loops over all 672 dataset/setting/model/method configurations and then
-builds the tables, producing one `.out` and one `.err`. If it later exceeds the
-cluster time limit, split first by model and then by dataset. `RUN_MODE=train`
-or `RUN_MODE=tables` can still separate computation from aggregation, and
-`SKIP_COMPLETED=true` resumes an otherwise identical sweep.
+Yes: small can safely precede large. Both profiles default to
+`SKIP_COMPLETED=true`. Before each configuration, the launcher checks every
+requested `seed_N`; seeds with a non-empty result, resolved config containing
+the requested step budget, and dataset provenance older than the result are
+reused. Large therefore computes only missing small seeds plus its new
+datasets, DLinear runs, and additional methods. Test defaults to
+`SKIP_COMPLETED=false` because its isolated 2,000-step outputs are intended to
+be refreshed. Set `SKIP_COMPLETED=false` explicitly after changing another
+training hyperparameter. If a sequential allocation exceeds the time limit,
+resubmit the same profile; split first by model and then dataset only when
+needed. `RUN_MODE=train` and `RUN_MODE=tables` can separate computation from
+aggregation.
 
 ## Sweep overrides
 
@@ -132,12 +145,12 @@ SETTINGS="168:24 504:168" \
 MODELS=patchtst \
 METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" \
 SEEDS="1 2 3" \
-EPOCHS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
-EVAL_STRIDE=horizon TEST_MODE=false RUN_MODE=both \
+EPOCHS=10000 STEPS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
+EVAL_STRIDE=horizon EXPERIMENT_MODE=large RUN_MODE=both \
 sbatch revin.slurm
 ```
 
-Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `OUT_ROOT`, `DATA_ROOT`,
+Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `EPOCHS`, `STEPS`, `OUT_ROOT`, `DATA_ROOT`,
 `VENV_ACTIVATE`, `SUMMARY_METHODS`, `ORACLE_METHODS`, `BASELINE_METHOD`,
 `GENERATE_SUMMARY`, and `STRICT_SUMMARY`. `EVAL_STRIDE` may be `horizon` or a
 positive integer.
@@ -150,7 +163,7 @@ elsewhere. The active models do not read pretrained weights.
 ## Executable files
 
 - `revin.slurm` is the only file submitted with `sbatch`. Edit its
-  partition, time limit, resources, `TEST_MODE`, and `RUN_MODE`.
+  partition, time limit, resources, `EXPERIMENT_MODE`, and `RUN_MODE`.
 - `src/slurm/run_revin_experiment.sh` resolves data, enumerates the requested
   configurations, launches one Python process per configuration, and builds
   aggregate tables. It logs every parameter that distinguishes adjacent runs.

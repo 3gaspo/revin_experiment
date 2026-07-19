@@ -35,6 +35,8 @@ normalization:
 training:
   batch_size: 256
   epochs: 10000
+  # Optional exact optimizer-step cap. The Slurm profiles set this explicitly.
+  steps: null
   lr: 1e-5
   loss: nmse
   device: gpu

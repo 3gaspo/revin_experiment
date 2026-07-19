@@ -57,6 +57,7 @@ class TorchLearner:
         seed,
         valid_eval_freq=None,
         logging_eval_freq=None,
+        steps=None,
     ):
         random.seed(seed)
         np.random.seed(seed)
@@ -75,6 +76,9 @@ class TorchLearner:
         }
         recent_losses = []
         step = 0
+        max_steps = None if steps is None else int(steps)
+        if max_steps is not None and max_steps < 1:
+            raise ValueError("steps must be positive")
 
         def evaluate_interval(log=False):
             if not recent_losses:
@@ -94,7 +98,12 @@ class TorchLearner:
                     "step=%s train_interval=%.6g valid=%s", step, train_loss, valid_results
                 )
 
-        for _ in range(epochs):
+        epoch = 0
+        while (
+            (max_steps is None and epoch < epochs)
+            or (max_steps is not None and step < max_steps)
+        ):
+            epoch += 1
             self.model.train()
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -108,6 +117,8 @@ class TorchLearner:
                 recent_losses.append(value)
                 if step % valid_eval_freq == 0:
                     evaluate_interval(log=step % logging_eval_freq == 0)
+                if max_steps is not None and step >= max_steps:
+                    break
         evaluate_interval(log=True)
         return history
 

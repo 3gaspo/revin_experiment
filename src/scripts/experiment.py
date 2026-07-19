@@ -65,6 +65,7 @@ def run_experiment(cfg: DictConfig):
         cfg.seed,
         cfg.training.get("valid_eval_freq"),
         cfg.training.get("logging_eval_freq"),
+        cfg.training.get("steps"),
     )
     model.save(output / "model.pt")
     torch.save(history, output / "history.pt")

@@ -10,11 +10,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4000
 
-# Submit this file from the project root. Edit resources and the smoke/full switch here.
-TEST_MODE="${TEST_MODE:-true}"
+# Submit from the project root. Select test, small, or large here or at submission.
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT TEST_MODE RUN_MODE
+export PROJECT_ROOT EXPERIMENT_MODE RUN_MODE
 source "$PROJECT_ROOT/src/slurm/run_revin_experiment.sh"

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 from omegaconf import OmegaConf
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -53,6 +54,7 @@ def main():
                 "training": {
                     "batch_size": 4,
                     "epochs": 1,
+                    "steps": 1,
                     "lr": 1e-5,
                     "loss": "nmse",
                     "device": "cpu",
@@ -68,6 +70,8 @@ def main():
         run = output / "tiny" / "12_4" / "dlinear_instance" / "seed_1"
         assert (run / "model.pt").exists()
         assert (run / "results.json").exists()
+        history = torch.load(run / "history.pt", weights_only=False)
+        assert len(history["train"]) == 1
         metadata = json.loads((run / "dataset_config.json").read_text(encoding="utf-8"))
         assert metadata["drop_users_applied"] == [0, 1, 2]
         assert metadata["retained_users"] == 2

@@ -7,7 +7,7 @@ log() { printf '%s %s\n' "$(date -Is)" "$*"; }
 log_section() { printf '\n%s %s\n' "$(date -Is)" "$*"; }
 log_error() { printf '%s %s\n' "$(date -Is)" "$*" >&2; }
 
-TEST_MODE="${TEST_MODE:-true}"
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$ROOT"
@@ -21,27 +21,41 @@ elif [ -z "${VIRTUAL_ENV:-}" ]; then
 fi
 export PYTHONPATH="$ROOT/src"
 
-if [ "$TEST_MODE" = true ]; then
-  DEFAULT_DATASETS="electricity solar"
-  DEFAULT_SETTINGS="168:24 720:168"
-  DEFAULT_SEEDS="1 2"
-  DEFAULT_MODELS="patchtst"
-  DEFAULT_METHODS="standard_mse standard_nmse instance_mse instance_nmse"
-  DEFAULT_EPOCHS=1000
-  DEFAULT_VALID_EVAL_FREQ=100
-  DEFAULT_LOGGING_EVAL_FREQ=100
-  DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment_test"
-else
-  DEFAULT_DATASETS="etth1 electricity traffic solar weather exchange_rate"
-  DEFAULT_SETTINGS="168:24 168:168 504:24 504:168 504:504 720:168 720:720"
-  DEFAULT_SEEDS="1 2 3 4 5"
-  DEFAULT_MODELS="dlinear patchtst"
-  DEFAULT_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
-  DEFAULT_EPOCHS=10000
-  DEFAULT_VALID_EVAL_FREQ=1000
-  DEFAULT_LOGGING_EVAL_FREQ=1000
-  DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment"
-fi
+DEFAULT_SETTINGS="168:24 168:168 504:24 504:168 504:504 720:168 720:720"
+DEFAULT_SEEDS="1 2 3 4 5"
+DEFAULT_EPOCHS=10000
+DEFAULT_STEPS=10000
+DEFAULT_VALID_EVAL_FREQ=1000
+DEFAULT_LOGGING_EVAL_FREQ=1000
+DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment"
+DEFAULT_SKIP_COMPLETED=true
+
+case "$EXPERIMENT_MODE" in
+  test)
+    DEFAULT_DATASETS="electricity solar"
+    DEFAULT_SETTINGS="168:24 720:168"
+    DEFAULT_SEEDS="1 2"
+    DEFAULT_MODELS="patchtst"
+    DEFAULT_METHODS="standard_mse standard_nmse instance_mse instance_nmse"
+    DEFAULT_EPOCHS=2000
+    DEFAULT_STEPS=2000
+    DEFAULT_VALID_EVAL_FREQ=200
+    DEFAULT_LOGGING_EVAL_FREQ=200
+    DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment_test"
+    DEFAULT_SKIP_COMPLETED=false
+    ;;
+  small)
+    DEFAULT_DATASETS="traffic electricity solar"
+    DEFAULT_MODELS="patchtst"
+    DEFAULT_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse"
+    ;;
+  large)
+    DEFAULT_DATASETS="etth1 electricity traffic solar weather exchange_rate"
+    DEFAULT_MODELS="dlinear patchtst"
+    DEFAULT_METHODS="none_mse standard_mse standard_nmse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
+    ;;
+  *) log_error "EXPERIMENT_MODE must be test, small, or large (got $EXPERIMENT_MODE)"; exit 2 ;;
+esac
 DATASETS_SPEC="${DATASETS:-$DEFAULT_DATASETS}"
 SETTINGS_SPEC="${SETTINGS:-$DEFAULT_SETTINGS}"
 SEEDS_SPEC="${SEEDS:-$DEFAULT_SEEDS}"
@@ -61,13 +75,14 @@ read -r -a ORACLE_SUFFIX_LIST <<< "${ORACLE_METHODS_SPEC//,/ }"
 TOTAL_CONFIGURATIONS=$((${#DATASET_LIST[@]} * ${#SETTING_LIST[@]} * ${#MODEL_LIST[@]} * ${#METHOD_LIST[@]}))
 
 EPOCHS="${EPOCHS:-$DEFAULT_EPOCHS}"
+STEPS="${STEPS:-$DEFAULT_STEPS}"
 VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-$DEFAULT_VALID_EVAL_FREQ}"
 LOGGING_EVAL_FREQ="${LOGGING_EVAL_FREQ:-$DEFAULT_LOGGING_EVAL_FREQ}"
 BATCH_SIZE="${BATCH_SIZE:-256}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
 EVAL_STRIDE="${EVAL_STRIDE:-horizon}"
 OUT_ROOT="${OUT_ROOT:-$DEFAULT_OUT_ROOT}"
-SKIP_COMPLETED="${SKIP_COMPLETED:-false}"
+SKIP_COMPLETED="${SKIP_COMPLETED:-$DEFAULT_SKIP_COMPLETED}"
 GENERATE_SUMMARY="${GENERATE_SUMMARY:-true}"
 STRICT_SUMMARY="${STRICT_SUMMARY:-true}"
 BASELINE_METHOD="${BASELINE_METHOD:-standard_mse}"
@@ -128,19 +143,30 @@ validate_setting() {
   fi
 }
 
-configuration_complete() {
+pending_seeds() {
   local output="$1"
+  local source_config="$2"
   local seed
+  local seed_root
+  PENDING_SEED_LIST=()
   for seed in "${SEED_LIST[@]}"; do
-    [ -f "$output/seed_$seed/results.json" ] || return 1
+    seed_root="$output/seed_$seed"
+    if [ ! -s "$seed_root/results.json" ] ||
+      [ ! -s "$seed_root/config.yaml" ] ||
+      [ ! -s "$seed_root/dataset_config.json" ] ||
+      ! grep -Eq "^[[:space:]]+steps: $STEPS$" "$seed_root/config.yaml" ||
+      { [ -f "$source_config" ] && [ "$source_config" -nt "$seed_root/results.json" ]; }; then
+      PENDING_SEED_LIST+=("$seed")
+    fi
   done
 }
 
 run_training() {
   local configuration_index=0
-  local dataset data_root setting L H stride model method output
+  local dataset data_root dataset_config setting L H stride model method output run_seeds_csv
   for dataset in "${DATASET_LIST[@]}"; do
     data_root="$(resolve_data_root "$dataset")"
+    dataset_config="$data_root/$dataset/config.json"
     for setting in "${SETTING_LIST[@]}"; do
       validate_setting "$setting"
       L="${setting%%:*}"
@@ -151,20 +177,24 @@ run_training() {
         for method in "${METHOD_LIST[@]}"; do
           method_args "$method"
           output="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}"
-          if [ "$SKIP_COMPLETED" = true ] && configuration_complete "$output"; then
-            log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method"
+          PENDING_SEED_LIST=("${SEED_LIST[@]}")
+          if [ "$SKIP_COMPLETED" = true ]; then pending_seeds "$output" "$dataset_config"; fi
+          if [ "${#PENDING_SEED_LIST[@]}" -eq 0 ]; then
+            log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method seeds=$SEEDS_CSV"
           else
-            printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s method=%s seeds=%s batch_size=%s learning_rate=%s epochs=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
+            run_seeds_csv="$(IFS=,; echo "${PENDING_SEED_LIST[*]}")"
+            printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s method=%s requested_seeds=%s run_seeds=%s batch_size=%s learning_rate=%s epochs=%s steps=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
               "$(date -Is)" "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS" "$dataset" "$L" "$H" "$model" "$method" "$SEEDS_CSV" \
-              "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
+              "$run_seeds_csv" "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$STEPS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
             srun --ntasks=1 python -m scripts.experiment \
               data.root="$data_root" data.name="$dataset" data.eval_stride="$stride" \
               task.lags="$L" task.horizon="$H" model.name="$model" \
               training.batch_size="$BATCH_SIZE" training.lr="$LEARNING_RATE" \
               training.epochs="$EPOCHS" \
+              training.steps="$STEPS" \
               training.valid_eval_freq="$VALID_EVAL_FREQ" \
               training.logging_eval_freq="$LOGGING_EVAL_FREQ" \
-              "${ARGS[@]}" seeds="[$SEEDS_CSV]" \
+              "${ARGS[@]}" seeds="[$run_seeds_csv]" \
               output.dir="$OUT_ROOT/$dataset/${L}_${H}" \
               output.name="${model}_${method}"
           fi
@@ -234,7 +264,7 @@ run_tables() {
   done
 }
 
-log_section "job start kind=revin run_mode=$RUN_MODE test_mode=$TEST_MODE datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC"
+log_section "job start kind=revin experiment_mode=$EXPERIMENT_MODE run_mode=$RUN_MODE skip_completed=$SKIP_COMPLETED datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC"
 if [ "$RUN_MODE" = train ] || [ "$RUN_MODE" = both ]; then run_training; fi
 if [ "$RUN_MODE" = tables ] || [ "$RUN_MODE" = both ]; then run_tables; fi
 log_section "job done kind=revin output=$OUT_ROOT"
