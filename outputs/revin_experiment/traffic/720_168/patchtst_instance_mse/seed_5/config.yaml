@@ -1,0 +1,36 @@
+data:
+  root: /home/h61084/codes/revin_experiment/datasets
+  name: traffic
+  config_path: null
+  drop_users: []
+  date_splits:
+  - 0.6
+  - 0.2
+  - 0.2
+  indiv_split: 0.8
+  eval_stride: 168
+task:
+  lags: 720
+  horizon: 168
+model:
+  name: patchtst
+  kwargs: {}
+normalization:
+  name: revin
+  kwargs:
+    affine: false
+training:
+  batch_size: 256
+  epochs: 10000
+  steps: 10000
+  lr: 1.0e-05
+  loss: mse
+  device: gpu
+  valid_eval_freq: 1000
+  logging_eval_freq: 1000
+  plot_step_train_loss: false
+seed: 5
+seeds: null
+output:
+  dir: /home/h61084/codes/revin_experiment/outputs/revin_experiment/traffic/720_168
+  name: patchtst_instance_mse/seed_5

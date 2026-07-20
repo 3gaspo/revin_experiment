@@ -11,7 +11,7 @@
 #SBATCH --mem=4000
 
 # Submit from the project root. Select test, small, or large here or at submission.
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-small}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"

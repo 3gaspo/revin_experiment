@@ -1,0 +1,42 @@
+{
+  "csv_path": "/home/h61084/codes/revin_experiment/datasets/electricity/electricity.csv",
+  "config_path": "/home/h61084/codes/revin_experiment/datasets/electricity/config.json",
+  "config_keys": [
+    "drop_users"
+  ],
+  "drop_users_from_config": [
+    57,
+    106,
+    127,
+    182,
+    298,
+    6,
+    113,
+    143,
+    245
+  ],
+  "drop_users_from_run": [],
+  "drop_users_applied": [
+    57,
+    106,
+    127,
+    182,
+    298,
+    6,
+    113,
+    143,
+    245
+  ],
+  "dropped_columns": [
+    "57",
+    "106",
+    "127",
+    "182",
+    "298",
+    "6",
+    "113",
+    "143",
+    "245"
+  ],
+  "retained_users": 312
+}
