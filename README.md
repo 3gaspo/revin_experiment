@@ -34,9 +34,12 @@ A sibling `datasets/<name>/config.json` is loaded automatically. Shared
 `drop_users` entries are zero-based positions among the original value columns;
 additional RevIN-only exclusions may be placed under a `revin` object. The two
 lists and any `data.drop_users` Hydra additions are merged, so a run cannot
-silently re-enable a dataset-level exclusion. Set `data.config_path` only to use
-an explicit JSON file or directory. Every seed output records the effective
-path, applied indices, dropped column names, and retained-user count in
+silently re-enable a dataset-level exclusion. A portable `target_cols` list may
+select named variables; the project-scoped value overrides the shared value and
+an explicit `data.target_cols` run value overrides both. ETTh1 is configured as
+OT-only. Set `data.config_path` only to use an explicit JSON file or directory.
+Every seed output records the effective path, applied indices, selected target
+columns, dropped column names, and retained-user count in
 `dataset_config.json`.
 
 The repository tracks the curated Electricity configuration while leaving its
@@ -64,7 +67,7 @@ python -m scripts.experiment \
   model.name=patchtst normalization.name=revin \
   training.loss=nmse training.epochs=10000 training.steps=10000 \
   training.valid_eval_freq=1000 training.logging_eval_freq=1000 \
-  seeds='[1,2,3,4,5]' output.name=patchtst_revin_nmse
+  seeds='[1,2,3]' output.name=patchtst_revin_nmse
 ```
 
 `seeds` expands a configuration into isolated `seed_N/` runs. Each run saves its
@@ -104,25 +107,31 @@ each with MSE and nMSE loss: 16 configurations in total. Each run uses exactly
 publication sweep. Inspect all `seed_N/results.json`, histories, plots, and the
 generated tables before continuing.
 
-The two publication profiles share `outputs/revin_experiment`:
+The publication profiles share `outputs/revin_experiment`:
 
-- `small`: Traffic, Electricity, and Solar; all seven settings; PatchTST; the
+- `small`: Traffic, Electricity, and Solar; `168:24`, `504:24`, `504:168`, and
+  `504:504`; PatchTST; the
   six core methods (`none_mse`, `standard_mse`, `instance_mse`,
-  `instance_nmse`, `revin_mse`, `revin_nmse`); seeds 1--5; exactly 10,000
-  optimizer steps. This is 126 configurations.
-- `large`: ETTh1, Electricity, Traffic, Solar, Weather, and Exchange Rate; all
-  seven settings; DLinear and PatchTST; all nine loss/normalization methods,
-  including `standard_nmse`, last-value centering, and arcsinh; seeds 1--5;
-  exactly 10,000 optimizer steps. This is 756 configurations.
+  `instance_nmse`, `revin_mse`, `revin_nmse`); seeds 1--3; exactly 10,000
+  optimizer steps. This is 72 configurations and 216 seed-runs.
+- `full`: ETTh1 (OT only), Electricity, Traffic, Solar, Weather, and Exchange
+  Rate; the four small settings plus `336:96` and `336:720`; PatchTST; all nine
+  methods, including `standard_nmse`, last-value centering, and arcsinh; seeds
+  1--3. This is 324 configurations and 972 seed-runs.
+- `ultra`: the full profile with both DLinear and PatchTST. This is 648
+  configurations and 1,944 seed-runs.
+
+`large` remains accepted as a compatibility alias for `full`.
 
 Run the core study first, then extend it:
 
 ```bash
 EXPERIMENT_MODE=small sbatch revin.slurm
-EXPERIMENT_MODE=large sbatch revin.slurm
+EXPERIMENT_MODE=full sbatch revin.slurm
+EXPERIMENT_MODE=ultra sbatch revin.slurm
 ```
 
-Yes: small can safely precede large. Both profiles default to
+Yes: small can safely precede full, then ultra. All publication profiles default to
 `SKIP_COMPLETED=true`. Before each configuration, the launcher checks every
 requested `seed_N`; seeds with a non-empty result, resolved config containing
 the requested step budget, and dataset provenance older than the result are
@@ -146,7 +155,7 @@ MODELS=patchtst \
 METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" \
 SEEDS="1 2 3" \
 EPOCHS=10000 STEPS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
-EVAL_STRIDE=horizon EXPERIMENT_MODE=large RUN_MODE=both \
+EVAL_STRIDE=horizon EXPERIMENT_MODE=full RUN_MODE=both \
 sbatch revin.slurm
 ```
 

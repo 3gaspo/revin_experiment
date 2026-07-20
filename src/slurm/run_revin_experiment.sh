@@ -21,8 +21,10 @@ elif [ -z "${VIRTUAL_ENV:-}" ]; then
 fi
 export PYTHONPATH="$ROOT/src"
 
-DEFAULT_SETTINGS="168:24 168:168 504:24 504:168 504:504 720:168 720:720"
-DEFAULT_SEEDS="1 2 3 4 5"
+DEFAULT_SMALL_SETTINGS="168:24 504:24 504:168 504:504"
+DEFAULT_FULL_SETTINGS="$DEFAULT_SMALL_SETTINGS 336:96 336:720"
+DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
+DEFAULT_SEEDS="1 2 3"
 DEFAULT_EPOCHS=10000
 DEFAULT_STEPS=10000
 DEFAULT_VALID_EVAL_FREQ=1000
@@ -46,15 +48,23 @@ case "$EXPERIMENT_MODE" in
     ;;
   small)
     DEFAULT_DATASETS="traffic electricity solar"
+    DEFAULT_SETTINGS="$DEFAULT_SMALL_SETTINGS"
     DEFAULT_MODELS="patchtst"
     DEFAULT_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse"
     ;;
-  large)
+  full|large)
     DEFAULT_DATASETS="etth1 electricity traffic solar weather exchange_rate"
+    DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
+    DEFAULT_MODELS="patchtst"
+    DEFAULT_METHODS="none_mse standard_mse standard_nmse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
+    ;;
+  ultra)
+    DEFAULT_DATASETS="etth1 electricity traffic solar weather exchange_rate"
+    DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
     DEFAULT_MODELS="dlinear patchtst"
     DEFAULT_METHODS="none_mse standard_mse standard_nmse instance_mse instance_nmse revin_mse revin_nmse revin_last_nmse revin_arcsinh_nmse"
     ;;
-  *) log_error "EXPERIMENT_MODE must be test, small, or large (got $EXPERIMENT_MODE)"; exit 2 ;;
+  *) log_error "EXPERIMENT_MODE must be test, small, full, or ultra (large is a compatibility alias; got $EXPERIMENT_MODE)"; exit 2 ;;
 esac
 DATASETS_SPEC="${DATASETS:-$DEFAULT_DATASETS}"
 SETTINGS_SPEC="${SETTINGS:-$DEFAULT_SETTINGS}"
@@ -164,9 +174,12 @@ pending_seeds() {
 run_training() {
   local configuration_index=0
   local dataset data_root dataset_config setting L H stride model method output run_seeds_csv
+  local dataset_args=()
   for dataset in "${DATASET_LIST[@]}"; do
     data_root="$(resolve_data_root "$dataset")"
     dataset_config="$data_root/$dataset/config.json"
+    dataset_args=()
+    if [ "${dataset,,}" = etth1 ]; then dataset_args+=(data.target_cols="[OT]"); fi
     for setting in "${SETTING_LIST[@]}"; do
       validate_setting "$setting"
       L="${setting%%:*}"
@@ -188,6 +201,7 @@ run_training() {
               "$run_seeds_csv" "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$STEPS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
             srun --ntasks=1 python -m scripts.experiment \
               data.root="$data_root" data.name="$dataset" data.eval_stride="$stride" \
+              "${dataset_args[@]}" \
               task.lags="$L" task.horizon="$H" model.name="$model" \
               training.batch_size="$BATCH_SIZE" training.lr="$LEARNING_RATE" \
               training.epochs="$EPOCHS" \

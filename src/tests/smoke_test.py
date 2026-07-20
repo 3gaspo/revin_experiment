@@ -32,7 +32,13 @@ def main():
             }
         ).to_csv(dataset / "tiny.csv")
         (dataset / "config.json").write_text(
-            json.dumps({"drop_users": [0], "revin": {"drop_users": [1]}}),
+            json.dumps(
+                {
+                    "drop_users": [0],
+                    "target_cols": ["c", "d", "e"],
+                    "revin": {"drop_users": [1], "target_cols": ["d", "e"]},
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -44,6 +50,7 @@ def main():
                     "name": "tiny",
                     "config_path": None,
                     "drop_users": [2],
+                    "target_cols": None,
                     "date_splits": [0.5, 0.25, 0.25],
                     "indiv_split": 0.5,
                     "eval_stride": 4,
@@ -74,6 +81,7 @@ def main():
         assert len(history["train"]) == 1
         metadata = json.loads((run / "dataset_config.json").read_text(encoding="utf-8"))
         assert metadata["drop_users_applied"] == [0, 1, 2]
+        assert metadata["target_cols_applied"] == ["d", "e"]
         assert metadata["retained_users"] == 2
         table = generate_results_table(
             output,

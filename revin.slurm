@@ -8,10 +8,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4000
+#SBATCH --mem=40000
 
-# Submit from the project root. Select test, small, or large here or at submission.
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-small}"
+# Submit from the project root. Select test, small, full, or ultra here or at submission.
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"

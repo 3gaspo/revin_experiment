@@ -27,10 +27,10 @@ statistics are fitted on training data only.  Instance and RevIN statistics are
 computed from each look-back and inverted after forecasting; all reported MSEs
 are in original data space.
 
-The large sweep uses ETTh1, Electricity, Traffic, Solar, Weather, and
-Exchange Rate; seven $(L,H)$ settings; DLinear and PatchTST; five seeds; batch
+The full sweep uses ETTh1 (target OT only), Electricity, Traffic, Solar, Weather, and
+Exchange Rate; six $(L,H)$ settings; PatchTST; three seeds; batch
 size 256; learning rate $10^{-5}$; and exactly 10,000 optimizer steps.  The long-horizon setting
-is $(504,504)$. Validation and logging run every 1,000 optimizer steps, while
+is $(336,720)$. Validation and logging run every 1,000 optimizer steps, while
 evaluation windows use a horizon-sized stride. Training windows are sampled at
 random over users and dates. Test mode uses Electricity/Solar, two settings,
 PatchTST, seeds 1--2, and 2,000 optimizer steps.
@@ -38,10 +38,11 @@ PatchTST, seeds 1--2, and 2,000 optimizer steps.
 \textbf{Implementation:} \code{src/utils/models.py}\\
 \textbf{Launcher:} \code{revin.slurm}
 
-Run isolated \code{test} mode first. The \code{small} profile then covers
-Traffic, Electricity, and Solar with PatchTST and the six core methods. The
-\code{large} profile shares its output root, reuses completed small seeds, and
-adds all datasets, DLinear, standard--nMSE, last-value, and arcsinh runs.
+Run isolated \code{test} mode first. The \code{small} profile then reproduces
+the original Traffic/Electricity/Solar PatchTST study on four settings. The
+\code{full} profile shares its output root, reuses completed small seeds, and
+adds all datasets, two comparison settings, standard--nMSE, last-value, and
+arcsinh runs. The \code{ultra} profile adds DLinear.
 One table is produced per model and test split,
 with seed mean $\pm$ sample standard deviation and an explicit row multiplier
 $\times10^m$. JSON summaries also retain the variance of per-point losses.
