@@ -1,0 +1,65 @@
+{
+  "split": "test2",
+  "metric": "mse",
+  "aggregation": "equal weight per dataset/setting; paired complete seeds only",
+  "configuration_count": 4,
+  "common_seeds": [
+    1,
+    2
+  ],
+  "baseline_method": "patchtst_standard_mse",
+  "methods": {
+    "patchtst_standard_mse": {
+      "macro_mean": 15996873.947544336,
+      "seed_std": 20807001.230938222,
+      "seed_variance": 432931300224264.7,
+      "mean_within_run_loss_variance": 2.441451113325548e+17,
+      "mean_relative_improvement_percent": 0.0
+    },
+    "patchtst_instance_nmse": {
+      "macro_mean": 5588301.831028581,
+      "seed_std": 7786376.158302116,
+      "seed_variance": 60627653678575.625,
+      "mean_within_run_loss_variance": 4.428254433257256e+16,
+      "mean_relative_improvement_percent": 35.553869812637586
+    }
+  },
+  "oracle": {
+    "selection": "lowest mean test metric per dataset/setting (optimistic)",
+    "candidates": [
+      "patchtst_standard_mse"
+    ],
+    "macro_mean": 15996873.947544336,
+    "seed_std": 20807001.230938222,
+    "seed_variance": 432931300224264.7,
+    "mean_within_run_loss_variance": 2.441451113325548e+17,
+    "mean_relative_improvement_percent": 0.0,
+    "selection_counts": {
+      "patchtst_standard_mse": 4
+    },
+    "selections": [
+      {
+        "dataset": "electricity",
+        "setting": "168_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "720_168",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "168_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "720_168",
+        "method": "patchtst_standard_mse"
+      }
+    ]
+  },
+  "missing_results": [],
+  "missing_expected_seeds": []
+}
