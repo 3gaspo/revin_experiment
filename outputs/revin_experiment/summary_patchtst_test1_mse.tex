@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+\centering
+\caption{Macro-average MSE on test1. Each dataset--setting pair has equal weight. Seed uncertainty is computed across seed-level macro averages. The test oracle is an optimistic reference.}
+\begin{tabular}{lrrrr}
+\toprule
+Policy & Mean & Seed std. & Seed variance & Mean rel. gain (\%) \\
+\midrule
+patchtst\_standard\_mse & 1.82839e+06 & 2.9387e+06 & 8.63595e+12 & 0 \\
+patchtst\_instance\_nmse & 846837 & 1.35324e+06 & 1.83125e+12 & -8680.99 \\
+patchtst\_revin\_nmse & 845767 & 1.35149e+06 & 1.82653e+12 & -8787.43 \\
+test-oracle & 845767 & 1.35149e+06 & 1.82653e+12 & 20.7699 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,16 @@
+{
+  "csv_path": "/home/h61084/codes/revin_experiment/../datasets/traffic/traffic.csv",
+  "config_path": "/home/h61084/codes/revin_experiment/../datasets/traffic/config.json",
+  "config_keys": [
+    "drop_users",
+    "target_cols"
+  ],
+  "drop_users_from_config": [],
+  "drop_users_from_run": [],
+  "drop_users_applied": [],
+  "dropped_columns": [],
+  "target_cols_from_config": null,
+  "target_cols_from_run": null,
+  "target_cols_applied": null,
+  "retained_users": 862
+}

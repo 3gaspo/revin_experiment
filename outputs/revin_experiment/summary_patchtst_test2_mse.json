@@ -1,0 +1,115 @@
+{
+  "split": "test2",
+  "metric": "mse",
+  "aggregation": "equal weight per dataset/setting; paired complete seeds only",
+  "configuration_count": 12,
+  "common_seeds": [
+    1,
+    2,
+    3
+  ],
+  "baseline_method": "patchtst_standard_mse",
+  "methods": {
+    "patchtst_standard_mse": {
+      "macro_mean": 10552334.769680649,
+      "seed_std": 8993857.636121543,
+      "seed_variance": 80889475178821.81,
+      "mean_within_run_loss_variance": 1.3284416464544848e+17,
+      "mean_relative_improvement_percent": 0.0
+    },
+    "patchtst_instance_nmse": {
+      "macro_mean": 6159621.531568733,
+      "seed_std": 5286156.1490934715,
+      "seed_variance": 27943446832598.72,
+      "mean_within_run_loss_variance": 7.0475646663890136e+16,
+      "mean_relative_improvement_percent": -8680.149892170839
+    },
+    "patchtst_revin_nmse": {
+      "macro_mean": 6142832.1576768225,
+      "seed_std": 5271804.371801768,
+      "seed_variance": 27791921334548.242,
+      "mean_within_run_loss_variance": 7.014619652254184e+16,
+      "mean_relative_improvement_percent": -8783.60879516811
+    }
+  },
+  "oracle": {
+    "selection": "lowest mean test metric per dataset/setting (optimistic)",
+    "candidates": [
+      "patchtst_standard_mse",
+      "patchtst_revin_nmse"
+    ],
+    "macro_mean": 6142832.078518671,
+    "seed_std": 5271804.375838038,
+    "seed_variance": 27791921377105.082,
+    "mean_within_run_loss_variance": 7.014619652254181e+16,
+    "mean_relative_improvement_percent": 17.921500972788994,
+    "selection_counts": {
+      "patchtst_revin_nmse": 7,
+      "patchtst_standard_mse": 5
+    },
+    "selections": [
+      {
+        "dataset": "electricity",
+        "setting": "168_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_168",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_504",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "168_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_168",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_504",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "168_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_168",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_504",
+        "method": "patchtst_standard_mse"
+      }
+    ]
+  },
+  "missing_results": [],
+  "missing_expected_seeds": []
+}
