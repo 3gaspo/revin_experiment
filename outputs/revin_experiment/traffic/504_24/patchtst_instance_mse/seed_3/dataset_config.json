@@ -5,12 +5,21 @@
     "drop_users",
     "target_cols"
   ],
-  "drop_users_from_config": [],
+  "drop_users_from_config": [
+    181,
+    743
+  ],
   "drop_users_from_run": [],
-  "drop_users_applied": [],
-  "dropped_columns": [],
+  "drop_users_applied": [
+    181,
+    743
+  ],
+  "dropped_columns": [
+    "181",
+    "743"
+  ],
   "target_cols_from_config": null,
   "target_cols_from_run": null,
   "target_cols_applied": null,
-  "retained_users": 862
+  "retained_users": 860
 }

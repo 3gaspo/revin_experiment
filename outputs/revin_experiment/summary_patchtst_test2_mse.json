@@ -11,25 +11,25 @@
   "baseline_method": "patchtst_standard_mse",
   "methods": {
     "patchtst_standard_mse": {
-      "macro_mean": 10552334.769680649,
-      "seed_std": 8993857.636121543,
-      "seed_variance": 80889475178821.81,
+      "macro_mean": 10552334.769702235,
+      "seed_std": 8993857.63611022,
+      "seed_variance": 80889475178618.11,
       "mean_within_run_loss_variance": 1.3284416464544848e+17,
       "mean_relative_improvement_percent": 0.0
     },
     "patchtst_instance_nmse": {
-      "macro_mean": 6159621.531568733,
-      "seed_std": 5286156.1490934715,
-      "seed_variance": 27943446832598.72,
+      "macro_mean": 6159621.463853725,
+      "seed_std": 5286156.180322952,
+      "seed_variance": 27943447162766.54,
       "mean_within_run_loss_variance": 7.0475646663890136e+16,
-      "mean_relative_improvement_percent": -8680.149892170839
+      "mean_relative_improvement_percent": 18.304653876640348
     },
     "patchtst_revin_nmse": {
-      "macro_mean": 6142832.1576768225,
-      "seed_std": 5271804.371801768,
-      "seed_variance": 27791921334548.242,
+      "macro_mean": 6142832.089155597,
+      "seed_std": 5271804.403470936,
+      "seed_variance": 27791921668455.555,
       "mean_within_run_loss_variance": 7.014619652254184e+16,
-      "mean_relative_improvement_percent": -8783.60879516811
+      "mean_relative_improvement_percent": 18.378498741770056
     }
   },
   "oracle": {
@@ -38,14 +38,14 @@
       "patchtst_standard_mse",
       "patchtst_revin_nmse"
     ],
-    "macro_mean": 6142832.078518671,
-    "seed_std": 5271804.375838038,
-    "seed_variance": 27791921377105.082,
+    "macro_mean": 6142832.07853585,
+    "seed_std": 5271804.375826196,
+    "seed_variance": 27791921376980.23,
     "mean_within_run_loss_variance": 7.014619652254181e+16,
-    "mean_relative_improvement_percent": 17.921500972788994,
+    "mean_relative_improvement_percent": 18.459454598357862,
     "selection_counts": {
-      "patchtst_revin_nmse": 7,
-      "patchtst_standard_mse": 5
+      "patchtst_revin_nmse": 11,
+      "patchtst_standard_mse": 1
     },
     "selections": [
       {
@@ -91,22 +91,22 @@
       {
         "dataset": "traffic",
         "setting": "168_24",
-        "method": "patchtst_standard_mse"
+        "method": "patchtst_revin_nmse"
       },
       {
         "dataset": "traffic",
         "setting": "504_168",
-        "method": "patchtst_standard_mse"
+        "method": "patchtst_revin_nmse"
       },
       {
         "dataset": "traffic",
         "setting": "504_24",
-        "method": "patchtst_standard_mse"
+        "method": "patchtst_revin_nmse"
       },
       {
         "dataset": "traffic",
         "setting": "504_504",
-        "method": "patchtst_standard_mse"
+        "method": "patchtst_revin_nmse"
       }
     ]
   },
