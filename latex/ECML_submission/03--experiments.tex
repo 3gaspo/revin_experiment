@@ -1,131 +1,239 @@
-\section{When Is Instance Normalization Useful?} \label{ablation-studies}
+\section{Investigating RevIN} \label{ablation-studies}
 
-\subsection{Controlled benchmark} \label{quantitative}
+\subsection{Benchmarking ReVIN's components} \label{quantitative}
 
-\paragraph{Compared components.}
-We compare no normalization, global standardization, non-affine instance
-normalization, and affine RevIN. For the two instance-normalized variants, we
-also compare data-space MSE with normalized MSE,
-\begin{equation}
- \mathcal{L}_{\mathrm{nMSE}}(\hat y,y\mid x)
- =\frac{1}{H}\sum_{h=1}^{H}
- \left(\frac{\hat y_h-y_h}{\sigma_x+\epsilon}\right)^2.
-\end{equation}
-Predictions are always returned to data space and evaluated with ordinary MSE;
-normalized MSE only changes the weight assigned to each training window. This
-factorial comparison separates the forward normalization, RevIN's affine
-parameters, and scale-balanced optimization.
+In this section, we quantitatively evaluate the impact of the RevIN framework and its individual components, assessing whether each component contributes to improved generalization.
 
-\paragraph{Datasets and splits.}
-The expanded benchmark uses \textsc{ETTh1}, \textsc{Electricity},
-\textsc{Traffic}, \textsc{Solar}, \textsc{Weather}, and
-\textsc{Exchange Rate}. Dates are split sequentially into train, validation,
-and test periods. Series are independently split into seen and unseen groups.
-Models are trained on seen series in the training period and evaluated on
-future dates for seen series (Test1) and future dates for unseen series (Test2).
-We study $(L,H)$ in
+% \clearpage
+
+\paragraph{Normalization strategies.}
+We compare several normalization strategies applied during training:
+\begin{itemize}
+    \item \textbf{Standard normalization:} Inputs are normalized using shared mean $\mu$ and standard deviation $\sigma$, computed empirically over all the training data.
+    \item \textbf{RevIN:} Inputs are normalized independently based on the look-back window's statistics $\mu_x$ and $\sigma_x$, with an additional learnable affine transformation ($\alpha,\beta$). The output of the model is denormalized using the inverse of the normalization layer.
+    \item \textbf{RevIN (w/o $\alpha,\beta$):} Same as RevIN but without the learnable affine transformation.
+\end{itemize}
+
+\paragraph{Training strategies.} For RevIN, we compare two training strategies:
+\begin{itemize}
+    \item \textbf{Standard backpropagation:} The training losses are computed between the denormalized predictions $\hat{y}$ and the ground truths $y$. This corresponds to the \textit{data space}.
+    \item \textbf{Normalized backpropagation:} The training losses are computed on non-denormalized predictions and normalized ground-truths $\tilde{y}=\frac{y- \mu_x}{\sigma_x}$ (using the look-back's statistics), i.e. in the \textit{normalized space}. For RevIN with $\alpha,\beta$, this comes after the inverse $\textrm{affine}$ layer (see \cref{fig:revin-process}).
+\end{itemize}
+
+
+
+\paragraph{Datasets.} \label{datasets}
+Experiments are conducted on three widely used real-world datasets (\textsc{Electricity}, \textsc{Solar}, and \textsc{Traffic} \citep{lai2018modeling}), as well as a controlled synthetic dataset. The latter contains two clusters of noisy sinusoidal series,
 \[
-\{(168,24),(168,168),(504,24),(504,168),(504,504),
-  (720,168),(720,720)\}.
+X_t=at+b+A\sin(2\pi t/T)+\epsilon_t,
 \]
+with cluster-specific trends and offsets that create a fixed shift between
+look-back and horizon statistics.
+For each dataset, we consider multiple look-back ($L$) and horizon ($H$) configurations, denoted as $L$-$H$. We include short-term (168-24), medium-term (504-24 and 504-168), and long-term (504-504) settings.
 
-\paragraph{Protocol.}
-We use \textsc{PatchTST} \citep{patchtst} and \textsc{DLinear}
-\citep{dlinear}. Training samples random users and window starts, uses Adam
-\citep{adam}, batch size 256, learning rate $10^{-5}$, and five seeds.
-Every run uses exactly 10,000 optimizer steps. Validation is evaluated every
-1,000 optimizer steps; evaluation windows use a
-horizon-sized stride. Every table reports seed mean $\pm$ sample standard
-deviation, while run summaries retain the variance and count of per-point loss
-contributions. The rewritten implementation is first checked in short test mode
-and then compared with the earlier results before the expanded analysis is
-used.
+For training and evaluation, we split dates sequentially into $\mathcal{T}_{train},\mathcal{T}_{valid},\mathcal{T}_{test}$, and users into random seen and unseen subsets $\mathcal{I}_{in},\mathcal{I}_{out}$, yielding a total of six different distributions. Models are fitted on $(\mathcal{I}_{in},\mathcal{T}_{train})$ and evaluated either on the same users and new dates ("Test1" with $\mathcal{I}_{in},\mathcal{T}_{test}$) or on new users and new dates ("Test2" with $\mathcal{I}_{out},\mathcal{T}_{test}$).
 
-% The bundled table is the previous three-dataset reproduction target. Once the
-% new full run is complete, replace it with the generated mean-plus-uncertainty
-% tables under outputs/revin_experiment/.
+\paragraph{Protocol.} To isolate the effect of normalization, all experiments are conducted under identical architectures and optimization settings. We use the \textsc{PatchTST} architecture \citep{patchtst} as the backbone neural forecaster. It is a transformer-based model that has achieved state-of-the-art results in supervised univariate forecasting. Though not reported here, similar results were obtained with \textsc{DLinear}~\citep{dlinear}, a state-of-the-art linear model. For each normalization variant, we train models for 1200 epochs with a learning rate of $10^{-5}$, a batch size of $256$ and the Adam optimizer \citep{adam}. Each experiment is repeated across 5 random seeds, and we report the mean test MSE. Results for Test1 are presented in \cref{tab:main1} and for Test2 in \cref{tab:main2} (up to a constant scaling factor per-row for readability).
+%For the two largest settings, the batch size is $64$ and \textsc{Traffic} is run with one seed because of time and memory constraints. Constant windows caused by missing values are removed before training. Results on Test2 are presented in \cref{tab:main}.
+%Importantly, all reported errors are computed in the original data space, ensuring a fair comparison across all settings.
+
 \input{tables/main-table}
 
-\paragraph{Reproduction hypotheses.}
-The previous implementation suggested three findings to verify rather than
-assume. First, normalized-space training improved data-space MSE on the more
-heterogeneous collections. Second, the learnable affine parameters added little
-over non-affine instance normalization. Third, global standardization remained
-better on \textsc{Traffic}. The expanded dataset, horizon, backbone, and seed
-sweep tests whether these observations are stable or dataset-specific.
 
-\subsection{Relating gains to heterogeneity} \label{qualitative}
 
-Instance normalization directly removes variation in look-back location and
-scale. If $\mathcal{P}_{\mathrm{train}}$ and
-$\mathcal{P}_{\mathrm{test}}$ denote input-window distributions, its most
-plausible benefit is therefore in settings with shifts such as
+\paragraph{Results.}  \cref{tab:main1} and \cref{tab:main2} yield several observations. First, instance normalization outperforms on average other normalization techniques. This is true both for Test1 and Test2, i.e. when adding new dates and adding new users. This suggests that RevIN mitigates not only temporal shifts, but also spatial shifts, thus addressing both  challenges (i) and (ii) from \cref{intro}. Second, the additional affine layer (parameters $\alpha$ and $\beta$ ) is not beneficial in practice, and in particular, does not mitigate conditional shifts (challenge (iii)). We discuss the role of instance normalization and possible extensions to mitigate challenge (iii) in the next section. Third, although RevIN computes the loss in the data space (i.e. after inverting the instance normalization), training via backpropagation in the normalized space yields better models. This holds even when evaluating with the non-normalized MSE, which we view as the more meaningful metric. While this observation may appear counter-intuitive, we hypothesize that models learned in the normalized space better generalize by attributing the same weight both to low-scale and high-scale instances. We note that recent works, e.g. \citet{moirai}, often train directly in the normalized space and omit the affine layer---referring to this variant simply as \textit{instance normalization}---but do not justify this design choice. Our study shows these choices are indeed beneficial. Fourth, RevIN does not always outperform standard normalization. Indeed, the \textsc{Traffic} dataset benefits most from standard normalization, which we hypothesize is due to its relatively small sample heterogeneity. We discuss this in the next section.
+
+\subsection{Mitigating heterogeneity with instance normalization} \label{qualitative}
+
+In this section, we discuss the limitations of RevIN and its capability to address the distribution shifts mentioned in \cref{intro}.
+
+\paragraph{What instance normalization does.} By applying instance normalization, we essentially project the data in a space with stationary first and second order statistics.
+
+Indeed, by linearity, we immediately have: $\mu(\tilde{x})=\beta$ and $\sigma(\tilde{x})=|\alpha|$ ($\mu(\tilde{x})=0$ and $\sigma(\tilde{x})=1$ when the affine layer is removed).
+Thus, denoting by  $\mathcal{P}_{\textrm{training}}$ and  $\mathcal{P}_{\textrm{test}}$ the data distributions of the training and test data, the heterogeneity RevIN addresses, and actually mitigates, are offset and scale shifts:
 \begin{equation}
- \mathbb{E}_{x\sim\mathcal{P}_{\mathrm{train}}}[\mu_x]
- \neq \mathbb{E}_{x\sim\mathcal{P}_{\mathrm{test}}}[\mu_x],
- \qquad
- \mathbb{E}_{x\sim\mathcal{P}_{\mathrm{train}}}[\sigma_x]
- \neq \mathbb{E}_{x\sim\mathcal{P}_{\mathrm{test}}}[\sigma_x].
+    \mathbb{E}_{x\sim \mathcal{P}_{\textrm{training}}}[\mu_x]\neq \mathbb{E}_{x\sim\mathcal{P}_{\textrm{test}}}[\mu_x] \quad \textrm{and} \quad \mathbb{E}_{x\sim \mathcal{P}_{\textrm{training}}}[\sigma_x]\neq \mathbb{E}_{x\sim\mathcal{P}_{\textrm{test}}}[\sigma_x].
 \end{equation}
-This is only a limited form of distribution alignment: higher-order structure,
-frequency content, and dynamics may still differ. Conversely, removing
-$(\mu_x,\sigma_x)$ is harmful when absolute level or scale helps predict the
-horizon.
 
-As a descriptive diagnostic, we compute energy distance
-\citep{smola2006maximum} between train and test inputs,
+Mitigating this particular shift amounts to only a limited form of distribution alignment. Training and test distributions may still differ in higher-order structure, frequency content, and temporal dynamics. Thus, addressing a more general definition of heterogeneity would be a first improvement to RevIN. For example, \citet{fan} perform normalization over the full frequency domain, which is a promising direction.
+
+\paragraph{Quantifying discrepancy} We can quantify the discrepancy between different distributions using the energy distance, i.e., the maximum mean discrepancy (MMD)~\citep{smola2006maximum} induced by $k(x,y)=-\lVert x-y\rVert_2$:
 \begin{equation}
-d^2_{\mathrm{energy}}(P,Q)=
-\mathbb{E}_{P,P}[k(x,x')]+\mathbb{E}_{Q,Q}[k(y,y')]
--2\mathbb{E}_{P,Q}[k(x,y)],
-\quad k(x,y)=-\lVert x-y\rVert_2.
+\label{eq:energy}
+d^2_{energy}(P,Q)=\mathbb{E}_{P,P}[k(x,x')]+\mathbb{E}_{Q,Q}[k(y,y')]
+-2\mathbb{E}_{P,Q}[k(x,y)].
 \end{equation}
-These distances and the t-SNE visualizations \citep{tsne} are computed in a
-separate dataset-analysis notebook, independently of model training. They are
-used to test association with forecasting gains, not as evidence of causality.
+
+\Cref{tab:distances} shows that instance normalization generally reduces inputs discrepancy, but neither completely nor consistently. Notably, standard normalization reduces discrepancy more than instance normalization on
+\textsc{Electricity}, and both normalization methods increase the temporal distance on \textsc{Traffic}. We can visualize this additional discrepancy on \cref{fig:traffic_time_tsne}, where t-SNE embeddings~\citep{tsne} of  training and test samples seem to move away from each other after normalization. From \cref{tab:distances}, we find that the temporal distance on \textsc{Traffic} is already extremely low, which would explain the degraded performance of RevIN in \cref{tab:main1} and \cref{tab:main2}. Indeed, instance normalization discards potentially informative data such as scale and offset. This suggests there is a tradeoff between distribution alignment and preserving informative inputs, as suspected by the authors of the various extensions to RevIN mentioned in \cref{extensions}. We formalize this in the last paragraph of this section.
 
 \begin{table}[t]
-\caption{Previously computed energy distances between input distributions.
-T and S vary time periods and series, respectively. Values will be recomputed
-with the expanded benchmark splits.}\label{tab:distances}
+\caption{Energy distances between input distributions. T and S denote temporal and spatial shifts, i.e., when varying time periods or users, respectively.}\label{tab:distances}
 \centering
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lrrrrrr}
 \toprule
-& \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Standard}
-& \multicolumn{2}{c}{Instance}\\
+& \multicolumn{2}{c}{None} & \multicolumn{2}{c}{Std. Norm.}
+& \multicolumn{2}{c}{Ins. Norm.}\\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 & T & S & T & S & T & S\\
 \midrule
 Electricity & 7.09 & 57.16 & \textbf{0.05} & \textbf{0.42} & 0.64 & 1.01\\
 Solar       & 3.48 & 0.98  & 1.05 & 0.30 & \textbf{0.78} & \textbf{0.29}\\
 Traffic     & \textbf{0.32} & 0.99 & 1.39 & 4.29 & 0.92 & \textbf{0.45}\\
+Synthetic   & 15.97 & 39.51 & 2.53 & 6.26 & \textbf{0.90} & \textbf{3.76}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.7\linewidth]{Images/tsne/traffic_time_tsne.png}
-\caption{Previous t-SNE embeddings of \textsc{Traffic} train (blue) and test
-(orange) inputs before (left) and after (right) instance normalization.}
-\label{fig:traffic_time_tsne}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Images/tsne/traffic_time_tsne.png}
+    \caption{t-SNE embeddings \citep{tsne}  of train (blue) and test (orange) data from  \textsc{Traffic}, before (left) and after (right) instance normalization.}
+    \label{fig:traffic_time_tsne}
 \end{figure}
 
-\subsection{Normalization choice as an oracle reference}
+\newpage
 
-Raw MSEs are not directly comparable across datasets with different units. We
-therefore report both the equal-configuration macro average
+\paragraph{On the conditional shift.}
+RevIN \citep{revin} is motivated by the idea that the statistics of the look-back and horizon windows should remain close, since they are adjacent in time. More precisely, it assumes that the difference between input and output statistics is approximately fixed over the distribution of windows, so that normalization allows the model to focus on a stationary mapping and only learn a small additional shift, and that the subsequent denormalization layer is sufficient to retrieve the correct scale and offset.
+
+More formally, for a look-back window $x$ and horizon $y$, we denote:
 \begin{equation}
- \overline{M}(m)=\frac{1}{|\mathcal{C}|}
- \sum_{c\in\mathcal{C}}M_{c,m}
+    \delta_x = \frac{\mu_y-\mu_x}{\sigma_x},
+    \qquad
+    \lambda_x = \frac{\sigma_y}{\sigma_x}.
+    \label{eq:relative_stats}
 \end{equation}
-and the mean per-setting relative gain over global standardization. In addition
-to fixed standard, non-affine instance, and affine RevIN policies, we compute a
-test oracle that chooses between standard normalization and full affine RevIN
-for each dataset--setting pair. This oracle is an
-optimistic upper reference, not a valid deployment procedure, because it uses
-test outcomes for selection. Its gap to either fixed policy nevertheless
-quantifies how much could be gained by learning a normalization-selection rule
-from pre-test diagnostics. All policy comparisons use the same complete seeds
-and report the standard deviation and variance of seed-level macro averages.
+
+The \textit{normalized output} (normalized with $\mu_x,\sigma_x$) satisfies:
+\begin{equation}
+    \tilde{y}
+    =
+    \frac{y-\mu_x}{\sigma_x},
+    \qquad
+    \mu_{\tilde{y}}
+    =
+    \delta_x,
+    \qquad
+    \sigma_{\tilde{y}}
+    =
+    \lambda_x.
+    \label{eq:target_relative_stats}
+\end{equation}
+For the normalized output to be stationary (in the sense implied by RevIN), the relative statistics $(\delta_x,\lambda_x)$ must themselves be independent of $x$. This explicit assumption made by the authors of RevIN \citep{revin} does not actually hold in practice, as shown in \cref{fig:modulations}. Indeed, real-world datasets rarely contain fixed shifts between the input and output statistics. Thus, RevIN does not really alleviate the conditional shift challenge.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{Images/beta.png}
+\caption{Values of $\delta_x$ for one user of \textsc{Electricity} over time. The assumption of a fixed relative shift does not hold.}
+\label{fig:modulations}
+\end{figure}
+
+Nevertheless, should we assume the relative statistics are fixed for a given dataset, we question whether RevIN can help the model in learning this shift. With RevIN, the input is transformed as:
+\begin{equation}
+    x \sim (\mu_x,\sigma_x)
+    \quad\longmapsto\quad
+    \tilde{x}
+    =
+    \alpha\frac{x-\mu_x}{\sigma_x}+\beta
+    \sim (\beta,|\alpha|),
+\end{equation}
+
+where $z\sim (a,b)$ means that $\mu_z,\sigma_z=a,b$. If the model is unbiased, its non-denormalized prediction must match the normalized target
+statistics in \cref{eq:target_relative_stats}. Equivalently,
+\begin{equation}
+    \frac{f_\theta(\tilde{x})-\beta}{\alpha}
+    \sim
+    (\delta,\lambda),
+    \qquad\text{hence}\qquad
+    f_\theta(\tilde{x})
+    \sim
+    (\beta+\alpha\delta,|\alpha|\lambda),
+    \label{eq:internal_shift}
+\end{equation}
+
+\cref{eq:internal_shift} implies that under a constant conditional shift (materialized by constant relative statistics $\delta,\lambda$), the model must learn an additive shift of $\alpha\delta$ on the mean and a multiplicative scaling of $\lambda$ on the standard deviation. We hypothesize that this transformation could easily be learned by a linear layer applied after the forecaster, enabling the main model to focus on stationary mappings. However, the symmetric affine layer used in RevIN cannot learn such a downstream correction, since the same parameters are tied to both the normalization and denormalization steps.
+
+In this setting, we propose cmIN, a simple variant of RevIN, standing for \textit{clustered modulated instance normalization}. It relaxes the symmetry constraint between the normalization and denormalization affine layers, and personalizes the linear parameters for each cluster of users $\mathcal{I}$:
+\begin{equation}
+    \tilde{x}
+    =
+    \gamma_\mathcal{I}\frac{x-\mu_x}{\sigma_x}+\nu_\mathcal{I},
+    \qquad
+    \hat{y}
+    =
+    \sigma_x
+    \left(
+        \alpha_\mathcal{I}
+        \frac{f_\theta(\tilde{x})-\nu_\mathcal{I}}{\gamma_\mathcal{I}}
+        +\beta_\mathcal{I}
+    \right)
+    +\mu_x.
+    \label{eq:cmin}
+\end{equation}
+The output affine parameters $(\alpha,\beta)$, which we call the \emph{modulations}, can then explicitly encode the empirical relative statistics. We propose an additional initialization strategy:
+\begin{equation}
+    (\gamma_{\mathcal{I}},\nu_{\mathcal{I}})=(1,0),
+    \qquad
+    (\beta_{\mathcal{I}},\alpha_{\mathcal{I}})
+    = \mathbb{E}_{\mathcal{T}_{\mathrm{train}},\mathcal{I}}
+    [\delta_x,\lambda_x].
+    \label{eq:cmin_init}
+\end{equation}
+
+\begin{table}[t]
+\caption{Results of cmIN on PatchTST for the synthetic dataset, measured in
+MSE on the Test1 split (new dates). In bold: best model per setting. Underline: second-best.}
+\vspace{0.2cm}
+\centering
+\scalebox{0.8}{
+\begin{tabular}{lccccc}
+\toprule
+& L-H & RevIN (w/o $\alpha,\beta$) & RevIN & cmIN & cmIN(init) \\
+\midrule
+\multirow{3}{*}{Synthetic}
+& 40-10  & 427.42 & 427.30 & \underline{425.17} & \textbf{356.03} \\
+& 100-20 & 366.02 & 365.36 & \underline{364.70} & \textbf{328.54} \\
+& 100-100 & 425.38 & 425.22 & \underline{424.97} & \textbf{346.45} \\
+\midrule
+Improvements
+&  & 0.0\% & 0.08\% & \underline{0.33\%} & \textbf{15.16\%} \\
+\bottomrule
+\end{tabular}}
+\label{tab:cmin}
+\end{table}
+
+\newpage
+Results for this experiment are provided in \cref{tab:cmin}. On the synthetic dataset (constructed so that the relative statistics $(\delta_x,\lambda_x)$ are stable within each cluster), cmIN outperforms RevIN, in particular when initialized with the strategy defined above (cmIN(init)). These results support the hypothesis that
+meaningful conditional shifts can be represented by an asymmetric
+denormalization layer, especially when it is informed by additional contextual information. To account for the non-stationary behavior of $\delta_x,\lambda_x$ on real-world datasets, more complex and adaptive denormalization modules should therefore be proposed, as per \citep{dishts}. Promising directions include online learning or meta-learning of the cmIN parameters.
+
+\paragraph{Extending the class of transformations for input normalization} As mentioned previously in this paper, instance normalization removes scale and offset from the input, although these statistics may themselves be predictive. In particular, two windows that differ only by an affine transformation become
+identical after normalization. This can be formalized as introducing a quotient space where:
+\begin{equation}
+    x \sim x'
+    \quad \Longleftrightarrow\quad
+    \tilde{x}=\tilde{x}',
+\end{equation}
+
+RevIN implicitly makes the assumption that equivalent look-back windows in this space lead to equivalent normalized outputs, i.e. that:
+\begin{equation}
+    x \sim x'
+    \quad \Longrightarrow\quad
+    \tilde{y}=\tilde{y}',
+\end{equation}
+
+Yet this inductive bias might not hold in real-world settings. A simple example is
+given in \cref{fig:saturation}, where saturation effects make the future depend on the absolute level of the signal. Simply re-integrating the input statistics via a linear mapping is not sufficient.
+
+This suggests that robustness to conditional changes requires retaining dependence on the original statistics via more general functions, e.g. predictions of the general form $\hat{y}=g(f_\theta(\tilde{x}),\mu_x,\sigma_x)$, as well as additional contextual cues (timestamp, user indicators, covariates, etc.). Designing such mechanisms in an architecture-agnostic way remains an open direction. Recent time series forecasting architectures (\citep{ansari2025chronos}, \citep{naour2026ts}) enable the integration of additional covariates as inputs, which could help address the conditional shift challenge.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.58\linewidth]{Images/misc/saturation.pdf}
+\caption{A saturation example: instance normalization cannot distinguish
+the two blue windows or the two green windows, although their expected
+outputs differ.}
+\label{fig:saturation}
+\end{figure}

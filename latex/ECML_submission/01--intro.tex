@@ -1,7 +1,7 @@
 \section{Introduction} \label{intro}
 
-Data normalization is a fundamental preprocessing step, long recognized as essential for the stable and efficient training of neural networks. Its significance was established in early studies on neural networks optimization \citep{DBLP:series/lncs/LeCunBOM12}. 
-Normalization is particularly critical in time series forecasting, a domain in which deep learning models have achieved state-of-the-art performance \citep{patchtst}. Intrinsic properties of time series, such as non-stationarity, trends, and seasonality, introduce challenges that standard normalization methods fail to address \citep{adaptivenorm}. 
+Data normalization is a fundamental preprocessing step, long recognized as essential for the stable and efficient training of neural networks. Its significance was established in early studies on neural networks optimization \citep{DBLP:series/lncs/LeCunBOM12}.
+Normalization is particularly critical in time series forecasting, a domain in which deep learning models have achieved state-of-the-art performance \citep{patchtst}. Intrinsic properties of time series, such as non-stationarity, trends, and seasonality, introduce challenges that standard normalization methods fail to address \citep{adaptivenorm}.
 %As a result, normalization becomes not merely a routine preprocessing step but a decisive factor influencing both model convergence and predictive performance.
 
 Three major aspects must be considered when designing a normalization strategy for time series forecasting:
@@ -22,16 +22,17 @@ Three major aspects must be considered when designing a normalization strategy f
 %\clearpage
 
 In deep learning, a common approach is to apply \textit{standard normalization} to all data points, using a single global mean $\mu$ and standard deviation $\sigma$ computed empirically over the training data. Each data point is processed by subtracting the mean and dividing by the standard deviation. However, this global normalization fails to address the challenges of the three distribution shifts
-%(i), (ii) and (iii) 
-described above 
+%(i), (ii) and (iii)
+described above
 \citep{adaptivenorm}. Indeed, the statistics estimated on the training data may no longer be valid at inference. A more sophisticated and widely adopted normalization strategy is \textit{instance normalization}, which normalizes input windows using their individual statistics. This ensures that whatever the scale and offset of the input, all windows seen by the model will be similarly distributed. This method was introduced to the forecasting community as \textit{Reversible Instance Normalization} (RevIN) \citep{revin}.
 
-The RevIN method has been adopted in numerous recent forecasting studies \citep{patchtst,fits,tirex,HUANG2025114036,revin}. Its authors argue that RevIN mitigates the distribution shift problem in time series. In this work, we investigate this claim more closely and ask when its inductive bias is preferable to global standardization.
+The RevIN method has been adopted in numerous recent forecasting studies \citep{patchtst,fits,tirex,HUANG2025114036,revin}. Its authors argue that RevIN mitigates the distribution shift problem in time series. In this work, we investigate this claim more closely.
 Our contributions are summarized as follows:
 \begin{itemize}
-    \item We separate global standardization, per-window normalization, RevIN's affine parameters, and normalized-space backpropagation under a common forecasting protocol.
-    \item We evaluate generalization to future dates and unseen series across datasets, look-back/horizon settings, two backbones, and multiple seeds, reporting both mean error and uncertainty.
-    \item We characterize the trade-off that determines when instance normalization helps: removing nuisance offset and scale heterogeneity versus preserving predictive absolute-level information. We also quantify the optimistic headroom of choosing standard or instance normalization per setting.
+    \item We review normalization techniques for neural forecasters and identify the key challenges they face in time series applications.
+    \item We conduct extensive ablation studies on RevIN using standard forecasting benchmarks and show which components are truly necessary.
+    \item We discuss the effects of instance normalization on input and output data distributions and highlight the limitations of RevIN.
+    % \item We claim the \textit{conditional shift between look-back and horizon windows} remains an open challenge, and draw perspectives on how to address it.
 \end{itemize}
 
 \newpage
@@ -61,4 +62,3 @@ Equation \ref{eq:definition} corresponds to the \textit{univariate regression} s
 \paragraph{Distribution shifts}
 Formally, let $\mathcal{P}^{\mathcal{I},\mathcal{T}}_{X,Y}$ denote the distribution of windows corresponding to series (users / sensors) $\mathcal{I}$, during the time period $\mathcal{T}$. Temporal and spatial shifts occur when the marginal distribution $\mathcal{P}^{\mathcal{I},\mathcal{T}}_{X}$ varies across different time periods in $\mathcal{T}$ and different users in $\mathcal{I}$, respectively. They are particular examples of \textit{covariate shift} \citep{kairouz2021advances} as they describe changes in input distributions. Conditional shift occurs when the conditional distribution
 $\mathcal{P}^{\mathcal{I},\mathcal{T}}_{Y|X}$ varies across $\mathcal{I}$ or $\mathcal{T}$.  It corresponds to a \textit{concept drift} \citep{moreno2012unifying}, and describes a change in the expected output for a given input. When learning a forecasting model, we typically sample examples from a subset of users $\mathcal{I}_{train}$ and a fixed time period $\mathcal{T}_{train}$. We refer to generalization as the capacity of the model to perform well for new users $\mathcal{I}_{test}$ and at a future time period $\mathcal{T}_{test}$. In case of temporal, spatial, and conditional shifts, input normalization aims to improve generalization.
-
