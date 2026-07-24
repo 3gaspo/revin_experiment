@@ -30,6 +30,14 @@ date index and the remaining columns are user series. Dates are split
 chronologically. With `data.indiv_split<1`, seen and unseen users produce
 `valid1/test1` and `valid2/test2` splits.
 
+Every sampled integer `t` is the last observed date. A forecasting pair is
+`X_t = X(t-L:t] = {x_(t-L+1), ..., x_t}` and
+`Y_t = X(t:t+H] = {x_(t+1), ..., x_(t+H)}`. Chronological splits own target
+dates: the full horizon must stay inside its split, while the lookback may
+cross the preceding boundary. Thus the first validation/test query is the date
+immediately before that target period, and changing `L` does not change which
+validation/test target dates are evaluated.
+
 A sibling `datasets/<name>/config.json` is loaded automatically. Shared
 `drop_users` entries are zero-based positions among the original value columns;
 additional RevIN-only exclusions may be placed under a `revin` object. The two
@@ -38,13 +46,17 @@ silently re-enable a dataset-level exclusion. A portable `target_cols` list may
 select named variables; the project-scoped value overrides the shared value and
 an explicit `data.target_cols` run value overrides both. ETTh1 is configured as
 OT-only. Set `data.config_path` only to use an explicit JSON file or directory.
-Every seed output records the effective path, applied indices, selected target
-columns, dropped column names, and retained-user count in
+Every seed output records the `query_t` window anchor, effective path, applied
+indices, selected target columns, dropped column names, and retained-user count in
 `dataset_config.json`.
 
 The repository tracks the curated Electricity configuration while leaving its
 CSV ignored. It includes every currently identified user with a constant run of
 at least 168 samples, including source column 245 found by the smoke audit.
+
+The shared Weather configuration excludes source columns 4, 7, 14, and 15
+(`rh (%)`, `VPdef (mbar)`, `rain (mm)`, and `raining (s)`). Each has more than
+10 exact constant input windows in the stride-one `168:24` audit.
 
 This is a curated exclusion list, not automatic constant-window detection. A
 user omitted from the JSON may still contain a constant look-back and destabilize
@@ -99,7 +111,7 @@ Then submit the benchmark smoke gate:
 EXPERIMENT_MODE=test sbatch revin.slurm
 ```
 
-Test mode uses Electricity/Solar, `168:24`/`720:168`, PatchTST, and seeds 1--2.
+Test mode uses Electricity/Solar, `168:24`/`504:168`, PatchTST, and seeds 1--2.
 It compares only global standardization and non-affine instance normalization,
 each with MSE and nMSE loss: 16 configurations in total. Each run uses exactly
 2,000 optimizer steps with validation and progress logging every 200 steps. Outputs go to

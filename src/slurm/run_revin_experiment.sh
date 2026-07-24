@@ -35,7 +35,7 @@ DEFAULT_SKIP_COMPLETED=true
 case "$EXPERIMENT_MODE" in
   test)
     DEFAULT_DATASETS="electricity solar"
-    DEFAULT_SETTINGS="168:24 720:168"
+    DEFAULT_SETTINGS="168:24 504:168"
     DEFAULT_SEEDS="1 2"
     DEFAULT_MODELS="patchtst"
     DEFAULT_METHODS="standard_mse standard_nmse instance_mse instance_nmse"
@@ -164,6 +164,9 @@ pending_seeds() {
     if [ ! -s "$seed_root/results.json" ] ||
       [ ! -s "$seed_root/config.yaml" ] ||
       [ ! -s "$seed_root/dataset_config.json" ] ||
+      { ! grep -Fq '"valid1"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
+      { ! grep -Fq '"valid2"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
+      ! grep -Fq '"window_anchor": "query_t"' "$seed_root/dataset_config.json" ||
       ! grep -Eq "^[[:space:]]+steps: $STEPS$" "$seed_root/config.yaml" ||
       { [ -f "$source_config" ] && [ "$source_config" -nt "$seed_root/results.json" ]; }; then
       PENDING_SEED_LIST+=("$seed")
@@ -260,6 +263,7 @@ run_tables() {
         "$OUT_ROOT" --split "$split" --metric mse
         --datasets "$dataset_arg" --settings "$setting_arg"
         --methods "$method_arg" --show-std --decimals 2
+        --selection-methods "$oracle_arg"
         --output "$OUT_ROOT/results_${model}_${split}_mse.tex"
       )
       if [ "$GENERATE_SUMMARY" = true ] && [ "${#summary_methods[@]}" -gt 0 ]; then

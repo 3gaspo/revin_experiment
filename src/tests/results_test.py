@@ -11,10 +11,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from utils.results import generate_average_summary, generate_results_table
 
 
-def write_result(root, dataset, method, seed, mean):
+def write_result(root, dataset, method, seed, mean, valid_mean):
     output = root / dataset / "168_24" / method / f"seed_{seed}"
     output.mkdir(parents=True)
     payload = {
+        "valid1": {"mse": {"mean": valid_mean}},
         "test1": {
             "mse": {
                 "mean": mean,
@@ -30,14 +31,40 @@ def write_result(root, dataset, method, seed, mean):
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        for dataset, standard, instance in (
-            ("first", (10.0, 12.0), (8.0, 10.0)),
-            ("second", (20.0, 22.0), (22.0, 24.0)),
+        for dataset, standard, instance, standard_valid, instance_valid in (
+            (
+                "first",
+                (10.0, 12.0),
+                (8.0, 10.0),
+                (10.0, 10.0),
+                (8.0, 8.0),
+            ),
+            (
+                "second",
+                (20.0, 22.0),
+                (22.0, 24.0),
+                (22.0, 22.0),
+                (21.0, 21.0),
+            ),
         ):
             for seed, mean in enumerate(standard, 1):
-                write_result(root, dataset, "patchtst_standard_mse", seed, mean)
+                write_result(
+                    root,
+                    dataset,
+                    "patchtst_standard_mse",
+                    seed,
+                    mean,
+                    standard_valid[seed - 1],
+                )
             for seed, mean in enumerate(instance, 1):
-                write_result(root, dataset, "patchtst_instance_nmse", seed, mean)
+                write_result(
+                    root,
+                    dataset,
+                    "patchtst_instance_nmse",
+                    seed,
+                    mean,
+                    instance_valid[seed - 1],
+                )
 
         table = generate_results_table(
             root,
@@ -45,8 +72,15 @@ def main():
             split="test1",
             settings=["168:24"],
             show_std=True,
+            selection_methods=[
+                "patchtst_standard_mse",
+                "patchtst_instance_nmse",
+            ],
         )
-        assert "$\\pm$" in table.read_text(encoding="utf-8")
+        table_text = table.read_text(encoding="utf-8")
+        assert "$\\pm$" in table_text
+        assert "validation-selected & test-oracle" in table_text
+        assert "llcrrr|r" in table_text
 
         summary_json, summary_tex = generate_average_summary(
             root,
@@ -68,6 +102,10 @@ def main():
         )
         assert math.isclose(summary["oracle"]["macro_mean"], 15.0)
         assert math.isclose(summary["oracle"]["seed_variance"], 2.0)
+        assert math.isclose(summary["validation_selected"]["macro_mean"], 16.0)
+        assert summary["validation_selected"]["selection_counts"] == {
+            "patchtst_instance_nmse": 2,
+        }
         assert summary["oracle"]["selection_counts"] == {
             "patchtst_instance_nmse": 1,
             "patchtst_standard_mse": 1,

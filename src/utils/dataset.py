@@ -19,9 +19,35 @@ LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class TimeSeriesData:
     values: torch.Tensor  # users x 1 x dates
+    target_start: int = 0
+    target_end: int | None = None
 
-    def select(self, users, dates) -> "TimeSeriesData":
-        return TimeSeriesData(self.values[users][:, :, dates])
+    @property
+    def dates(self) -> int:
+        return int(self.values.shape[-1])
+
+    @property
+    def target_bounds(self) -> tuple[int, int]:
+        end = self.dates if self.target_end is None else int(self.target_end)
+        return int(self.target_start), end
+
+    @property
+    def target_values(self) -> torch.Tensor:
+        start, end = self.target_bounds
+        return self.values[..., start:end]
+
+    def select(self, users, target_start: int, target_end: int) -> "TimeSeriesData":
+        users = [int(user) for user in users]
+        values = (
+            self.values
+            if users == list(range(len(self.values)))
+            else self.values[users]
+        )
+        return TimeSeriesData(
+            values,
+            target_start=int(target_start),
+            target_end=int(target_end),
+        )
 
 
 def _drop_user_list(value: Any) -> list[int]:
@@ -132,6 +158,7 @@ def load_dataset(
         raise ValueError("dataset has no users after applying drop_users")
     values = torch.tensor(frame.to_numpy(dtype=np.float32).T).unsqueeze(1)
     metadata = {
+        "window_anchor": "query_t",
         "csv_path": str(csv_path),
         "config_path": None if loaded_config_path is None else str(loaded_config_path),
         "config_keys": sorted(config),
@@ -158,56 +185,84 @@ def split_dataset(data: TimeSeriesData, date_splits, indiv_split: float, seed: i
     n_users, _, n_dates = data.values.shape
     train_end = int(date_splits[0] * n_dates)
     valid_end = int((date_splits[0] + date_splits[1]) * n_dates)
-    dates = [range(train_end), range(train_end, valid_end), range(valid_end, n_dates)]
+    target_bounds = [(0, train_end), (train_end, valid_end), (valid_end, n_dates)]
 
     if indiv_split == 1:
+        selected = data.select(range(n_users), 0, n_dates)
         return {
-            name: data.select(range(n_users), block)
-            for name, block in zip(("train", "valid", "test"), dates)
+            name: TimeSeriesData(selected.values, *bounds)
+            for name, bounds in zip(("train", "valid", "test"), target_bounds)
         }
 
     users = np.random.default_rng(seed).permutation(n_users)
     cut = int(indiv_split * n_users)
     groups = [users[:cut], users[cut:]]
     names = [("train", "valid1", "test1"), ("train2", "valid2", "test2")]
-    return {
-        name: data.select(group, block)
-        for group, group_names in zip(groups, names)
-        for name, block in zip(group_names, dates)
-    }
+    splits = {}
+    for group, group_names in zip(groups, names):
+        selected = data.select(group, 0, n_dates)
+        for name, bounds in zip(group_names, target_bounds):
+            splits[name] = TimeSeriesData(selected.values, *bounds)
+    return splits
 
 
-def window(data: TimeSeriesData, user: int, start: int, lags: int, horizon: int):
-    values = data.values[user, :, start : start + lags + horizon]
+def query_dates(
+    data: TimeSeriesData,
+    lags: int,
+    horizon: int,
+    stride: int = 1,
+) -> range:
+    """Return cutoff dates whose complete targets belong to this split."""
+    target_start, target_end = data.target_bounds
+    first = max(int(lags) - 1, target_start - 1)
+    last = min(data.dates - int(horizon) - 1, target_end - int(horizon) - 1)
+    if last < first:
+        return range(0)
+    return range(first, last + 1, int(stride))
+
+
+def window(data: TimeSeriesData, user: int, query_t: int, lags: int, horizon: int):
+    """Return ``X=(t-L,t]`` and ``Y=(t,t+H]`` for cutoff ``query_t``."""
+    start = int(query_t) - int(lags) + 1
+    stop = int(query_t) + int(horizon) + 1
+    values = data.values[user, :, start:stop]
     return values[:, :lags], values[:, lags:]
 
 
 class RandomWindows(Dataset):
     def __init__(self, data: TimeSeriesData, lags: int, horizon: int):
         self.data, self.lags, self.horizon = data, lags, horizon
-        self.starts = data.values.shape[-1] - lags - horizon + 1
+        self.query_dates = tuple(query_dates(data, lags, horizon))
+        if not self.query_dates:
+            raise ValueError("split has no query date with a complete target")
 
     def __len__(self):
         return len(self.data.values)
 
     def __getitem__(self, _):
         user = np.random.randint(len(self.data.values))
-        start = np.random.randint(self.starts)
-        return window(self.data, user, start, self.lags, self.horizon)
+        query_t = int(np.random.choice(self.query_dates))
+        return window(self.data, user, query_t, self.lags, self.horizon)
 
 
 class AllWindows(Dataset):
     def __init__(self, data: TimeSeriesData, lags: int, horizon: int, stride: int):
         self.data, self.lags, self.horizon = data, lags, horizon
-        starts = range(0, data.values.shape[-1] - lags - horizon + 1, stride)
-        self.indices = [(user, start) for start in starts for user in range(len(data.values))]
+        dates = query_dates(data, lags, horizon, stride)
+        self.indices = [
+            (user, query_t)
+            for query_t in dates
+            for user in range(len(data.values))
+        ]
+        if not self.indices:
+            raise ValueError("split has no query date with a complete target")
 
     def __len__(self):
         return len(self.indices)
 
     def __getitem__(self, index):
-        user, start = self.indices[index]
-        return window(self.data, user, start, self.lags, self.horizon)
+        user, query_t = self.indices[index]
+        return window(self.data, user, query_t, self.lags, self.horizon)
 
 
 def build_loaders(cfg, lags: int, horizon: int, batch_size: int, seed: int):
@@ -230,6 +285,6 @@ def build_loaders(cfg, lags: int, horizon: int, batch_size: int, seed: int):
         )
         for name, split in splits.items()
     }
-    train = splits["train"].values
+    train = splits["train"].target_values
     stats = {"mean": train.mean(), "std": train.std(unbiased=False)}
     return loaders, stats, data.values.shape[1], metadata

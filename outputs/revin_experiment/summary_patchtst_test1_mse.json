@@ -32,6 +32,84 @@
       "mean_relative_improvement_percent": 21.15917681580577
     }
   },
+  "validation_selected": {
+    "selection": "lowest mean valid1 metric per dataset/setting",
+    "candidates": [
+      "patchtst_standard_mse",
+      "patchtst_revin_nmse"
+    ],
+    "macro_mean": 845767.1870672068,
+    "seed_std": 1351492.1966320782,
+    "seed_variance": 1826531157557.4,
+    "mean_within_run_loss_variance": 9009608564365928.0,
+    "mean_relative_improvement_percent": 20.622360546716244,
+    "selection_counts": {
+      "patchtst_revin_nmse": 10,
+      "patchtst_standard_mse": 2
+    },
+    "selections": [
+      {
+        "dataset": "electricity",
+        "setting": "168_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_168",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "electricity",
+        "setting": "504_504",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "168_24",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_168",
+        "method": "patchtst_standard_mse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "solar",
+        "setting": "504_504",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "168_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_168",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_24",
+        "method": "patchtst_revin_nmse"
+      },
+      {
+        "dataset": "traffic",
+        "setting": "504_504",
+        "method": "patchtst_revin_nmse"
+      }
+    ]
+  },
   "oracle": {
     "selection": "lowest mean test metric per dataset/setting (optimistic)",
     "candidates": [

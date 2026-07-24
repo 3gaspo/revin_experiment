@@ -31,6 +31,18 @@ def summarize(losses):
     }
 
 
+def summarize_final_validation(history):
+    """Store the final validation means needed for method selection."""
+    return {
+        split: {
+            metric: {"mean": float(value)}
+            for metric, value in records[-1]["losses"].items()
+        }
+        for split, records in history["valid"].items()
+        if records
+    }
+
+
 def run_experiment(cfg: DictConfig):
     started = perf_counter()
     output = Path(cfg.output.dir) / cfg.output.name
@@ -82,7 +94,8 @@ def run_experiment(cfg: DictConfig):
         if name.startswith("test")
     }
     torch.save(losses, output / "losses.pt")
-    (output / "results.json").write_text(json.dumps(summarize(losses), indent=2))
+    results = {**summarize(losses), **summarize_final_validation(history)}
+    (output / "results.json").write_text(json.dumps(results, indent=2))
     logging.info("finished in %.1f seconds", perf_counter() - started)
 
 

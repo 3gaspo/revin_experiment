@@ -13,10 +13,28 @@ from omegaconf import OmegaConf
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.experiment import run_experiment
+from utils.dataset import AllWindows, TimeSeriesData, split_dataset
 from utils.results import generate_results_table
 
 
 def main():
+    panel = TimeSeriesData(torch.arange(20, dtype=torch.float32).view(1, 1, -1))
+    window_splits = split_dataset(panel, [0.5, 0.25, 0.25], 1.0, seed=0)
+    valid_windows = AllWindows(window_splits["valid"], lags=4, horizon=2, stride=1)
+    valid_x, valid_y = valid_windows[0]
+    torch.testing.assert_close(valid_x, torch.tensor([[6.0, 7.0, 8.0, 9.0]]))
+    torch.testing.assert_close(valid_y, torch.tensor([[10.0, 11.0]]))
+    assert valid_windows.indices[0] == (0, 9)
+    assert len(valid_windows) == 4
+    shorter_lookback = AllWindows(
+        window_splits["valid"],
+        lags=2,
+        horizon=2,
+        stride=1,
+    )
+    torch.testing.assert_close(shorter_lookback[0][1], valid_y)
+    assert len(shorter_lookback) == len(valid_windows)
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         dataset = root / "datasets" / "tiny"
@@ -80,6 +98,7 @@ def main():
         history = torch.load(run / "history.pt", weights_only=False)
         assert len(history["train"]) == 1
         metadata = json.loads((run / "dataset_config.json").read_text(encoding="utf-8"))
+        assert metadata["window_anchor"] == "query_t"
         assert metadata["drop_users_applied"] == [0, 1, 2]
         assert metadata["target_cols_applied"] == ["d", "e"]
         assert metadata["retained_users"] == 2
