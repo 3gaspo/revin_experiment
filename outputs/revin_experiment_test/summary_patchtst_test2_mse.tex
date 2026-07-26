@@ -1,13 +1,15 @@
 \begin{table}[htbp]
 \centering
-\caption{Macro-average MSE on test2. Each dataset--setting pair has equal weight. Seed uncertainty is computed across seed-level macro averages. The test oracle is an optimistic reference.}
+\caption{Macro-average MSE on test2. Each dataset--setting pair has equal weight. Seed uncertainty is computed across seed-level macro averages. Validation-selected chooses a method on the corresponding validation split; the test oracle is optimistic.}
 \begin{tabular}{lrrrr}
 \toprule
 Policy & Mean & Seed std. & Seed variance & Mean rel. gain (\%) \\
 \midrule
-patchtst\_standard\_mse & 1.59969e+07 & 2.0807e+07 & 4.32931e+14 & 0 \\
-patchtst\_instance\_nmse & 5.5883e+06 & 7.78638e+06 & 6.06277e+13 & 35.5539 \\
-test-oracle & 1.59969e+07 & 2.0807e+07 & 4.32931e+14 & 0 \\
+patchtst\_standard\_mse & 1.48326e+07 & 1.89626e+07 & 3.59578e+14 & 0 \\
+patchtst\_instance\_nmse & 6.58674e+06 & 9.18763e+06 & 8.44126e+13 & 29.8152 \\
+validation-selected & 1.48326e+07 & 1.89626e+07 & 3.59578e+14 & 0 \\
+\midrule
+test-oracle & 1.48326e+07 & 1.89626e+07 & 3.59578e+14 & 0 \\
 \bottomrule
 \end{tabular}
 \end{table}
