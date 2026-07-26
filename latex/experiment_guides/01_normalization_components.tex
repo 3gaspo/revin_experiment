@@ -27,7 +27,7 @@ statistics are fitted on training data only.  Instance and RevIN statistics are
 computed from each look-back and inverted after forecasting; all reported MSEs
 are in original data space.
 
-The full sweep uses ETTh1 (target OT only), Electricity, Traffic, Solar, Weather, and
+The full sweep uses ETTh1 (all seven variables), Electricity, Traffic, Solar, Weather, and
 Exchange Rate; six $(L,H)$ settings; PatchTST; three seeds; batch
 size 256; learning rate $10^{-5}$; and exactly 10,000 optimizer steps.  The long-horizon setting
 is $(336,720)$. Validation and logging run every 1,000 optimizer steps, while

@@ -182,7 +182,6 @@ run_training() {
     data_root="$(resolve_data_root "$dataset")"
     dataset_config="$data_root/$dataset/config.json"
     dataset_args=()
-    if [ "${dataset,,}" = etth1 ]; then dataset_args+=(data.target_cols="[OT]"); fi
     for setting in "${SETTING_LIST[@]}"; do
       validate_setting "$setting"
       L="${setting%%:*}"

@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader, Dataset
 
 LOGGER = logging.getLogger(__name__)
 
+RESAMPLE_REDUCERS = {"sum", "mean", "last", "first"}
+
 
 @dataclass(frozen=True)
 class TimeSeriesData:
@@ -111,6 +113,9 @@ def _load_dataset_config(
     options = {
         "drop_users": _drop_user_list(raw.get("drop_users")),
         "target_cols": _column_names(raw.get("target_cols")),
+        "date_col": raw.get("date_col"),
+        "aggr": raw.get("aggr"),
+        "aggr_period": raw.get("aggr_period"),
     }
     scoped = raw.get("revin")
     if scoped is not None:
@@ -121,6 +126,9 @@ def _load_dataset_config(
         )
         if scoped.get("target_cols") is not None:
             options["target_cols"] = _column_names(scoped.get("target_cols"))
+        for key in ("date_col", "aggr", "aggr_period"):
+            if scoped.get(key) is not None:
+                options[key] = scoped[key]
     LOGGER.info("loaded dataset config path=%s keys=%s", path, sorted(options))
     return options, path
 
@@ -131,10 +139,34 @@ def load_dataset(
     drop_users: Any = None,
     config_path: str | Path | None = None,
     target_cols: Any = None,
+    date_col: str | None = None,
+    aggr: str | None = None,
+    aggr_period: str | None = None,
 ) -> tuple[TimeSeriesData, dict[str, Any]]:
     csv_path = Path(root) / name / f"{name}.csv"
-    frame = pd.read_csv(csv_path, index_col=0)
     config, loaded_config_path = _load_dataset_config(root, name, config_path)
+    applied_date_col = date_col if date_col is not None else config.get("date_col")
+    applied_aggr = aggr if aggr is not None else config.get("aggr")
+    applied_aggr_period = (
+        aggr_period
+        if aggr_period is not None
+        else config.get("aggr_period") or "h"
+    )
+    if applied_date_col:
+        frame = pd.read_csv(csv_path, parse_dates=[applied_date_col])
+        frame = frame.set_index(applied_date_col)
+    else:
+        frame = pd.read_csv(csv_path, index_col=0)
+        frame.index = pd.to_datetime(frame.index)
+    if applied_aggr is not None and str(applied_aggr).lower() not in {"", "none"}:
+        reducer = str(applied_aggr).lower()
+        if reducer == "asfreq":
+            frame = frame.asfreq(str(applied_aggr_period))
+        elif reducer in RESAMPLE_REDUCERS:
+            frame = getattr(frame.resample(str(applied_aggr_period)), reducer)()
+        else:
+            raise ValueError(f"unknown aggregation {applied_aggr!r}")
+        frame = frame.dropna(axis=0, how="any")
     configured_drops = _drop_user_list(config.get("drop_users"))
     run_drops = _drop_user_list(drop_users)
     applied_drops = _merge_drop_users(configured_drops, run_drops)
@@ -169,6 +201,9 @@ def load_dataset(
         "target_cols_from_config": configured_targets,
         "target_cols_from_run": run_targets,
         "target_cols_applied": applied_targets,
+        "date_col_applied": applied_date_col,
+        "aggr_applied": applied_aggr,
+        "aggr_period_applied": applied_aggr_period,
         "retained_users": int(frame.shape[1]),
     }
     LOGGER.info(
@@ -269,11 +304,14 @@ def build_loaders(cfg, lags: int, horizon: int, batch_size: int, seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
     data, metadata = load_dataset(
-        cfg.root,
-        cfg.name,
-        cfg.get("drop_users"),
-        cfg.get("config_path"),
-        cfg.get("target_cols"),
+        root=cfg.root,
+        name=cfg.name,
+        drop_users=cfg.get("drop_users"),
+        config_path=cfg.get("config_path"),
+        target_cols=cfg.get("target_cols"),
+        date_col=cfg.get("date_col"),
+        aggr=cfg.get("aggr"),
+        aggr_period=cfg.get("aggr_period"),
     )
     splits = split_dataset(data, cfg.date_splits, cfg.indiv_split, seed)
     loaders = {

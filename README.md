@@ -44,11 +44,15 @@ additional RevIN-only exclusions may be placed under a `revin` object. The two
 lists and any `data.drop_users` Hydra additions are merged, so a run cannot
 silently re-enable a dataset-level exclusion. A portable `target_cols` list may
 select named variables; the project-scoped value overrides the shared value and
-an explicit `data.target_cols` run value overrides both. ETTh1 is configured as
-OT-only. Set `data.config_path` only to use an explicit JSON file or directory.
+an explicit `data.target_cols` run value overrides both. ETTh1 uses every
+non-date variable in the source CSV; the cluster copy must therefore be the
+complete seven-variable file. Set `data.config_path` only to use an explicit
+JSON file or directory. Portable `date_col`, `aggr`, and `aggr_period` fields
+are also applied; the shared configs aggregate Solar to hourly sums and Weather
+to hourly means.
 Every seed output records the `query_t` window anchor, effective path, applied
-indices, selected target columns, dropped column names, and retained-user count in
-`dataset_config.json`.
+indices, selected target columns, aggregation settings, dropped column names,
+and retained-user count in `dataset_config.json`.
 
 The repository tracks the curated Electricity configuration while leaving its
 CSV ignored. It includes every currently identified user with a constant run of
@@ -126,7 +130,7 @@ The publication profiles share `outputs/revin_experiment`:
   six core methods (`none_mse`, `standard_mse`, `instance_mse`,
   `instance_nmse`, `revin_mse`, `revin_nmse`); seeds 1--3; exactly 10,000
   optimizer steps. This is 72 configurations and 216 seed-runs.
-- `full`: ETTh1 (OT only), Electricity, Traffic, Solar, Weather, and Exchange
+- `full`: ETTh1 (all seven variables), Electricity, Traffic, Solar, Weather, and Exchange
   Rate; the four small settings plus `336:96` and `336:720`; PatchTST; all nine
   methods, including `standard_nmse`, last-value centering, and arcsinh; seeds
   1--3. This is 324 configurations and 972 seed-runs.

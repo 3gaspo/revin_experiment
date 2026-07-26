@@ -16,6 +16,9 @@ data:
   config_path: null
   drop_users: []
   target_cols: null
+  date_col: null
+  aggr: null
+  aggr_period: null
   date_splits: [0.6, 0.2, 0.2]
   indiv_split: 0.8
   eval_stride: 24

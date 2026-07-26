@@ -13,7 +13,7 @@ from omegaconf import OmegaConf
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.experiment import run_experiment
-from utils.dataset import AllWindows, TimeSeriesData, split_dataset
+from utils.dataset import AllWindows, TimeSeriesData, load_dataset, split_dataset
 from utils.results import generate_results_table
 
 
@@ -37,6 +37,45 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        aggregation_dataset = root / "datasets" / "aggregation"
+        aggregation_dataset.mkdir(parents=True)
+        pd.DataFrame(
+            {
+                "date": pd.date_range("2026-01-01", periods=12, freq="10min"),
+                "value": np.arange(1, 13, dtype=float),
+            }
+        ).to_csv(aggregation_dataset / "aggregation.csv", index=False)
+        (aggregation_dataset / "config.json").write_text(
+            json.dumps(
+                {
+                    "date_col": "date",
+                    "aggr": "sum",
+                    "aggr_period": "h",
+                    "drop_users": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        hourly_sum, sum_metadata = load_dataset(
+            root / "datasets",
+            "aggregation",
+        )
+        torch.testing.assert_close(
+            hourly_sum.values.flatten(),
+            torch.tensor([21.0, 57.0]),
+        )
+        assert sum_metadata["aggr_applied"] == "sum"
+        assert sum_metadata["aggr_period_applied"] == "h"
+        hourly_mean, _ = load_dataset(
+            root / "datasets",
+            "aggregation",
+            aggr="mean",
+        )
+        torch.testing.assert_close(
+            hourly_mean.values.flatten(),
+            torch.tensor([3.5, 9.5]),
+        )
+
         dataset = root / "datasets" / "tiny"
         dataset.mkdir(parents=True)
         t = np.arange(80)
