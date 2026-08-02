@@ -32,9 +32,14 @@ model:
   kwargs: {}
 
 normalization:
+  # name: none | standard | revin | min
   name: revin
   kwargs:
     affine: true
+    # RevIN also accepts center: mean | last | median | none,
+    # scale: std | mad | none, and transform: null | arcsinh.
+    # MIN always has untied learnable input/output affine parameters and
+    # therefore requires affine: true.
 
 training:
   batch_size: 256

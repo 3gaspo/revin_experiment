@@ -14,10 +14,69 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.experiment import run_experiment
 from utils.dataset import AllWindows, TimeSeriesData, load_dataset, split_dataset
+from utils.models import MIN, RevIN
 from utils.results import generate_results_table
 
 
 def main():
+    normalization_input = torch.tensor(
+        [
+            [[1.0, 2.0, 3.0, 4.0, 100.0]],
+            [[-5.0, -2.0, 0.0, 2.0, 5.0]],
+        ]
+    )
+
+    mean_only = RevIN(dim=1, affine=False, center="mean", scale="none")
+    mean_only_values = mean_only(normalization_input)
+    torch.testing.assert_close(
+        mean_only_values.mean(-1),
+        torch.zeros_like(mean_only_values.mean(-1)),
+        atol=1e-6,
+        rtol=0,
+    )
+    torch.testing.assert_close(mean_only.inverse(mean_only_values), normalization_input)
+
+    scale_only = RevIN(dim=1, affine=False, center="none", scale="std")
+    scale_only_values = scale_only(normalization_input)
+    torch.testing.assert_close(
+        scale_only_values.std(-1, unbiased=False),
+        torch.ones_like(scale_only_values.std(-1, unbiased=False)),
+        atol=1e-6,
+        rtol=0,
+    )
+    torch.testing.assert_close(scale_only.inverse(scale_only_values), normalization_input)
+
+    median_mad = RevIN(dim=1, affine=False, center="median", scale="mad")
+    robust_values = median_mad(normalization_input)
+    robust_median = robust_values.median(-1, keepdim=True).values
+    robust_mad = (robust_values - robust_median).abs().median(-1).values
+    torch.testing.assert_close(robust_median, torch.zeros_like(robust_median))
+    torch.testing.assert_close(
+        robust_mad,
+        torch.ones_like(robust_mad),
+        atol=1e-6,
+        rtol=0,
+    )
+    torch.testing.assert_close(median_mad.inverse(robust_values), normalization_input)
+
+    min_norm = MIN(dim=1)
+    min_values = min_norm(normalization_input)
+    torch.testing.assert_close(
+        min_norm.inverse(min_values),
+        normalization_input,
+        atol=1e-5,
+        rtol=1e-5,
+    )
+    with torch.no_grad():
+        min_norm.output_scale.fill_(2.0)
+        min_norm.output_shift.fill_(3.0)
+    expected_min = (
+        2.0 * normalization_input
+        - min_norm.shift
+        + 3.0 * min_norm._denominator()
+    )
+    torch.testing.assert_close(min_norm.inverse(min_values), expected_min)
+
     panel = TimeSeriesData(torch.arange(20, dtype=torch.float32).view(1, 1, -1))
     window_splits = split_dataset(panel, [0.5, 0.25, 0.25], 1.0, seed=0)
     valid_windows = AllWindows(window_splits["valid"], lags=4, horizon=2, stride=1)

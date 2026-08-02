@@ -10,11 +10,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
-# Submit from the project root. Select test, small, full, or ultra here or at submission.
+# Complete resumable workflow. Select test, small, full, or ultra here or at submission.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
-RUN_MODE="${RUN_MODE:-both}" # train, tables, or both
+STAGES="${STAGES:-train,tables}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE RUN_MODE
+export PROJECT_ROOT EXPERIMENT_MODE STAGES
 source "$PROJECT_ROOT/src/slurm/run_revin_experiment.sh"

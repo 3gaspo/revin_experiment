@@ -13,35 +13,45 @@ sine transform
  z=\operatorname{asinh}(x)
 \]
 is approximately linear near zero and logarithmic for large magnitudes, giving
-a reversible compression of heavy-tailed values before instance normalization.
+a reversible compression of large standardized magnitudes after instance
+normalization.
 
 \goal{Test two lightweight changes to RevIN's inductive bias: a more local
-location anchor and a nonlinear magnitude compression as appendix ablations.}
+location anchor and a nonlinear magnitude compression as appendix ablations,
+without confounding either transformation with the training-loss choice.}
 
 \section{Implementation details}
-The variants use non-affine instance normalization and normalized MSE:
+The variants use non-affine instance normalization and are each trained with
+both MSE and normalized MSE:
 \begin{center}
-\begin{tabular}{lll}
+\begin{tabular}{llll}
 \toprule
-Method & Center & Transform \\
+Variant & Center & Transform & Losses \\
 \midrule
-\code{instance\_nmse} & Look-back mean & Identity \\
-\code{revin\_last\_nmse} & Last observation & Identity \\
-\code{revin\_arcsinh\_nmse} & Look-back mean & asinh \\
+\code{instance} & Look-back mean & Identity & MSE, nMSE \\
+\code{revin\_last} & Last observation & Identity & MSE, nMSE \\
+\code{revin\_arcsinh} & Look-back mean & asinh & MSE, nMSE \\
 \bottomrule
 \end{tabular}
 \end{center}
+The concrete method names append \code{\_mse} or \code{\_nmse}; for example,
+\code{revin\_last\_mse} and \code{revin\_last\_nmse}. The historical
+\code{revin\_last} and \code{revin\_arcsinh} labels denote non-affine instance
+normalization despite retaining the RevIN prefix.
 Every transformation is inverted before data-space evaluation. These appendix
-variants run in the full and ultra profiles, over the same six datasets, six
+variants run in the full and ultra profiles, over the same nine datasets, five
 settings, PatchTST (plus DLinear in ultra), three seeds, optimizer, batch size, 10,000-step
 budget, and validation frequency. Configuration mapping
 is defined by \code{method\_args} in
 \code{src/slurm/run\_revin\_experiment.sh}; layer behavior is in
 \code{src/utils/models.py}.
+The root front runs the separate training and table stages in order and resumes
+from signature-matched completion markers.
 
 Tables are separate by model and test split.  They report ordinary MSE as mean
-$\pm$ sample standard deviation with explicit $\times10^m$ row scaling.  The
-baseline for both contrasts is \code{instance\_nmse}.
+$\pm$ sample standard deviation with explicit $\times10^m$ row scaling. Each
+variant is compared with \code{instance\_mse} under MSE training and
+\code{instance\_nmse} under nMSE training.
 
 \section{Interpretation}
 Last centering tests sensitivity to local level evolution; asinh tests

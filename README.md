@@ -3,8 +3,10 @@
 This independent experiment studies **when instance normalization is useful**
 for univariate time-series forecasting. It first reproduces the earlier RevIN
 ablation after the code rewrite, then extends it across datasets, settings, and
-the DLinear/PatchTST backbones. Proposed extensions such as cmIN belong in a
-separate future experiment and are intentionally not implemented here.
+the DLinear/PatchTST backbones. Global modulated instance normalization (MIN)
+is included as the non-personalized asymmetric-output precursor to cmIN.
+Cluster personalization and data-dependent cmIN initialization remain future
+work.
 
 ## Layout
 
@@ -13,7 +15,8 @@ src/
   conf/config.yaml
   models/                 DLinear and PatchTST
   scripts/experiment.py   train/evaluate one configuration (or a seed list)
-  slurm/*.sh              configuration enumeration, execution, and tables
+  slurm/run_*.sh          complete workflow orchestration
+  slurm/stage_*.sh        separate training and table stages
   utils/                  data, normalization, losses, training, plots, tables
   tests/                  lightweight checks
 latex/ECML_submission/    paper source
@@ -44,8 +47,8 @@ additional RevIN-only exclusions may be placed under a `revin` object. The two
 lists and any `data.drop_users` Hydra additions are merged, so a run cannot
 silently re-enable a dataset-level exclusion. A portable `target_cols` list may
 select named variables; the project-scoped value overrides the shared value and
-an explicit `data.target_cols` run value overrides both. ETTh1 uses every
-non-date variable in the source CSV; the cluster copy must therefore be the
+an explicit `data.target_cols` run value overrides both. ETTh1, ETTh2, ETTm1,
+and ETTm2 use every non-date variable in their source CSVs; cluster copies must therefore be the
 complete seven-variable file. Set `data.config_path` only to use an explicit
 JSON file or directory. Portable `date_col`, `aggr`, and `aggr_period` fields
 are also applied; the shared configs aggregate Solar to hourly sums and Weather
@@ -58,9 +61,11 @@ The repository tracks the curated Electricity configuration while leaving its
 CSV ignored. It includes every currently identified user with a constant run of
 at least 168 samples, including source column 245 found by the smoke audit.
 
-The shared Weather configuration excludes source columns 4, 7, 14, and 15
-(`rh (%)`, `VPdef (mbar)`, `rain (mm)`, and `raining (s)`). Each has more than
-10 exact constant input windows in the stride-one `168:24` audit.
+The shared Weather configuration retains every variate, including columns 4,
+7, 14, and 15, because the panel is already small. Their exact constant input
+windows remain known diagnostics from the stride-one `168:24` audit rather
+than dataset-level exclusions. ETT and Exchange Rate likewise retain all
+non-date variates.
 
 This is a curated exclusion list, not automatic constant-window detection. A
 user omitted from the JSON may still contain a constant look-back and destabilize
@@ -95,17 +100,40 @@ losses, interval-average train losses, and validation metrics at the same
 optimizer steps.
 
 Losses are MSE, MAE, normalized MSE/MAE, and relative MSE. The legacy `rmse`
-name remains accepted as an alias for relative MSE. The benchmark methods are
-no/global normalization, non-affine instance normalization, affine RevIN,
-data-space versus normalized-space backpropagation, last-value centering, and
-the arcsinh transform.
+name remains accepted as an alias for relative MSE. The Slurm study focuses on
+MSE versus nMSE so that each comparison retains a common squared-error
+objective. Its component matrix includes no normalization, global
+standardization, mean-only normalization, scale-only normalization, mean/std
+instance normalization, robust median/MAD normalization, affine RevIN, and
+global MIN. Full and ultra add non-affine last-value centering and arcsinh
+variants, also under both losses. The launcher intentionally does not schedule
+interaction-only compositions such as last-value centering plus arcsinh plus
+affine parameters.
 
-## Required order on Slurm
+`RevIN` accepts independent `center=mean|last|median|none` and
+`scale=std|mad|none` strategies. MAD is the raw per-window median absolute
+deviation around the window median. Mean-only uses `center=mean,scale=none`;
+scale-only uses `center=none,scale=std`; and the robust variant uses
+`center=median,scale=mad`.
+
+`MIN` retains RevIN's input affine parameters but unties the output:
+
+```text
+x_tilde = gamma * (x - location) / scale + nu
+y_hat   = scale * (alpha * (f(x_tilde) - nu) / gamma + beta) + location
+```
+
+`gamma`, `nu`, `alpha`, and `beta` are global per-channel parameters initialized
+to the identity. Unlike cmIN, the current MIN has no user/cluster-conditioned
+parameters and no empirical delta/lambda initialization.
+
+## Complete Slurm workflow
 
 First run the dependency-light local check in the prepared environment:
 
 ```bash
 python src/tests/results_test.py
+python src/tests/test_slurm_workflow.py
 python src/tests/smoke_test.py
 ```
 
@@ -115,29 +143,38 @@ Then submit the benchmark smoke gate:
 EXPERIMENT_MODE=test sbatch revin.slurm
 ```
 
-Test mode uses Electricity/Solar, `168:24`/`504:168`, PatchTST, and seeds 1--2.
-It compares only global standardization and non-affine instance normalization,
-each with MSE and nMSE loss: 16 configurations in total. Each run uses exactly
-2,000 optimizer steps with validation and progress logging every 200 steps. Outputs go to
+Test mode uses only Electricity at `504:168`, PatchTST, and seed 1.
+It compares global standardization and non-affine instance normalization under
+both losses, and smoke-checks mean-only, scale-only, median/MAD, and MIN under
+nMSE: 8 configurations and 8 seed-runs. Each run uses exactly 2,000 optimizer
+steps with validation and progress logging every 200 steps. Outputs go to
 `outputs/revin_experiment_test`, so they cannot overwrite or pollute the
 publication sweep. Inspect all `seed_N/results.json`, histories, plots, and the
 generated tables before continuing.
 
+`revin.slurm` always defaults to the ordered `STAGES=train,tables` workflow.
+The orchestrator in `src/slurm/run_revin_experiment.sh` resolves the scale and
+scientific grid; `stage_train.sh` fits only missing or stale configurations and
+`stage_tables.sh` requires the full selected grid before aggregating it.
+`STAGES=train` or `STAGES=tables` is available only as a recovery override.
+
 The publication profiles share `outputs/revin_experiment`:
 
-- `small`: Traffic, Electricity, and Solar; `168:24`, `504:24`, `504:168`, and
-  `504:504`; PatchTST; the
-  six core methods (`none_mse`, `standard_mse`, `instance_mse`,
-  `instance_nmse`, `revin_mse`, `revin_nmse`); seeds 1--3; exactly 10,000
-  optimizer steps. This is 72 configurations and 216 seed-runs.
-- `full`: ETTh1 (all seven variables), Electricity, Traffic, Solar, Weather, and Exchange
-  Rate; the four small settings plus `336:96` and `336:720`; PatchTST; all nine
-  methods, including `standard_nmse`, last-value centering, and arcsinh; seeds
-  1--3. This is 324 configurations and 972 seed-runs.
-- `ultra`: the full profile with both DLinear and PatchTST. This is 648
-  configurations and 1,944 seed-runs.
-
-`large` remains accepted as a compatibility alias for `full`.
+- `small`: Traffic, Electricity, Solar, Weather, and Exchange Rate; `168:24`,
+  `336:48`, and `504:168`; PatchTST; 16 component methods formed by
+  `{none, standard, mean-only, scale-only, instance, median-MAD, revin, min}`
+  x `{mse, nmse}`; seeds 1--3; exactly 10,000 optimizer steps. This is 240
+  configurations and 720 seed-runs.
+- `full`: the five small datasets plus the complete original ETTh1, ETTh2,
+  ETTm1, and ETTm2 panels; the three small settings plus `336:96` and
+  `336:720`; PatchTST; the
+  16 component methods plus last-value and arcsinh instance normalization under
+  both MSE and nMSE; seeds 1--3. This is 900 configurations and 2,700
+  seed-runs.
+- `ultra`: the full profile with both DLinear and PatchTST. This is 1,800
+  configurations and 5,400 seed-runs. Its PatchTST results are the full
+  profile, so after a completed full run it adds only the 900 DLinear
+  configurations (2,700 seed-runs).
 
 Run the core study first, then extend it:
 
@@ -147,18 +184,22 @@ EXPERIMENT_MODE=full sbatch revin.slurm
 EXPERIMENT_MODE=ultra sbatch revin.slurm
 ```
 
-Yes: small can safely precede full, then ultra. All publication profiles default to
-`SKIP_COMPLETED=true`. Before each configuration, the launcher checks every
-requested `seed_N`; seeds with a non-empty result, resolved config containing
-the requested step budget, and dataset provenance older than the result are
-reused. Large therefore computes only missing small seeds plus its new
-datasets, DLinear runs, and additional methods. Test defaults to
-`SKIP_COMPLETED=false` because its isolated 2,000-step outputs are intended to
-be refreshed. Set `SKIP_COMPLETED=false` explicitly after changing another
-training hyperparameter. If a sequential allocation exceeds the time limit,
-resubmit the same profile; split first by model and then dataset only when
-needed. `RUN_MODE=train` and `RUN_MODE=tables` can separate computation from
-aggregation.
+Small can safely precede full, then ultra. Every mode defaults to
+`SKIP_COMPLETED=true`. A seed is reusable only when `results.json`, its resolved
+configuration and dataset provenance, and its signature-matched `run.complete`
+are current. Training and tables have `.workflow/train.complete` and
+`.workflow/tables.complete` signatures, and tables
+are rebuilt only after new training results or a changed table grid. Outputs
+produced before this completion contract must be rerun once. Set
+`SKIP_COMPLETED=false` to force the selected workflow. If a sequential
+allocation exceeds the time limit, resubmit the same command; split first by
+model and then dataset only when needed.
+
+Tables requested with seed standard deviations remain valid in test mode: a
+single seed has no estimable sample standard deviation, so test cells show the
+value without `±`; macro uncertainty fields use `--`. Publication modes retain
+their multi-seed estimates. The table-stage `v2` signature rebuilds prior
+tables automatically without retraining completed runs.
 
 ## Sweep overrides
 
@@ -168,10 +209,10 @@ The launcher accepts space- or comma-separated environment overrides:
 DATASETS="electricity traffic" \
 SETTINGS="168:24 504:168" \
 MODELS=patchtst \
-METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse" \
+METHODS="mean_only_nmse scale_only_nmse instance_nmse median_mad_nmse min_nmse" \
 SEEDS="1 2 3" \
 EPOCHS=10000 STEPS=10000 VALID_EVAL_FREQ=1000 LOGGING_EVAL_FREQ=1000 \
-EVAL_STRIDE=horizon EXPERIMENT_MODE=full RUN_MODE=both \
+EVAL_STRIDE=horizon EXPERIMENT_MODE=full STAGES=train,tables \
 sbatch revin.slurm
 ```
 
@@ -188,15 +229,16 @@ elsewhere. The active models do not read pretrained weights.
 ## Executable files
 
 - `revin.slurm` is the only file submitted with `sbatch`. Edit its
-  partition, time limit, resources, `EXPERIMENT_MODE`, and `RUN_MODE`.
+  partition, time limit, resources, and `EXPERIMENT_MODE`.
 - `src/slurm/run_revin_experiment.sh` resolves data, enumerates the requested
-  configurations, launches one Python process per configuration, and builds
-  aggregate tables. It logs every parameter that distinguishes adjacent runs.
+  configurations, validates `STAGES`, and orchestrates the complete workflow.
+- `src/slurm/stage_train.sh` and `stage_tables.sh` execute the separate stages;
+  the root front sources them and users do not submit them directly.
 - `src/scripts/experiment.py` is the Hydra training/evaluation entry point. It
   expands `seeds`, writes one isolated directory per seed, and timestamps the
   training and validation messages.
 - `src/utils/results.py` validates completed seed outputs and creates LaTeX and
-  JSON summaries. It is normally called by table mode rather than directly.
+  JSON summaries. It is normally called by the table stage rather than directly.
 
 Timestamped progress, validation, evaluation, table messages, and Python
 warnings are written to the Slurm `.out` file. The `.err` file is reserved for
@@ -204,12 +246,23 @@ scheduler, shell, or Python failures.
 
 ## Result interpretation
 
-For every model and test split, table mode writes a row-wise LaTeX table with
-seed mean $\pm$ sample standard deviation and an explicit per-row
-`\times 10^m` multiplier. It also writes `summary_*.json` and `summary_*.tex`
-for global standardization, non-affine instance normalization, affine RevIN,
-and an oracle that chooses between global standardization and full affine RevIN
-using the lowest mean test MSE per dataset/setting.
+For every model and test split, the table stage writes focused LaTeX tables with seed
+mean $\pm$ sample standard deviation and an explicit per-row `\times 10^m`
+multiplier:
+
+- the compatibility filename `results_<model>_<split>_mse.tex` contains the
+  original none/standard/instance/RevIN comparison;
+- `*_components_mse.tex` compares none, mean-only, scale-only, instance, and
+  median--MAD;
+- `*_modulation_mse.tex` compares instance normalization, affine RevIN, and
+  global MIN;
+- `*_transforms_mse.tex` compares mean centering, last centering, and arcsinh.
+
+It also writes `summary_*.json` and `summary_*.tex` for every method scheduled
+in the current profile. By default, the validation-selected policy and
+optimistic test oracle choose among all those methods. `SUMMARY_METHODS` and
+`ORACLE_METHODS` can narrow the comparison when a specific paper table requires
+fewer candidates.
 
 The summaries give every dataset/setting equal weight, use only seeds complete
 for every compared method, report seed-level macro standard deviation and

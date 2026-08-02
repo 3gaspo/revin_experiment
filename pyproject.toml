@@ -1,7 +1,7 @@
 [project]
 name = "revin-experiment"
 version = "0.1.0"
-description = "Add your description here"
+description = "Normalization and normalized-loss experiments for time-series forecasting"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

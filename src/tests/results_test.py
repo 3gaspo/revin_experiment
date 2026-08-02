@@ -112,6 +112,42 @@ def main():
         }
         assert summary_tex.exists()
 
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write_result(
+            root,
+            "electricity",
+            "patchtst_standard_mse",
+            1,
+            2.0,
+            2.5,
+        )
+        table = generate_results_table(
+            root,
+            metric="mse",
+            split="test1",
+            settings=["168:24"],
+            methods=["patchtst_standard_mse"],
+            show_std=True,
+        )
+        table_text = table.read_text(encoding="utf-8")
+        assert "$\\pm$" not in table_text
+        assert "When at least two seeds are available" in table_text
+        summary_json, summary_tex = generate_average_summary(
+            root,
+            root / "summary.json",
+            datasets=["electricity"],
+            settings=["168:24"],
+            methods=["patchtst_standard_mse"],
+            oracle_methods=["patchtst_standard_mse"],
+            baseline_method="patchtst_standard_mse",
+            expected_seeds=[1],
+            strict=True,
+        )
+        summary = json.loads(summary_json.read_text(encoding="utf-8"))
+        assert summary["methods"]["patchtst_standard_mse"]["seed_std"] is None
+        assert "--" in summary_tex.read_text(encoding="utf-8")
+
 
 if __name__ == "__main__":
     main()

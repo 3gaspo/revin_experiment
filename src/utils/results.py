@@ -165,7 +165,12 @@ def build_table(
     methods = methods or sorted({method for _, _, method in values})
     policy_values = policy_values or {}
     policy_labels = list(policy_values)
-    uncertainty = " Seed uncertainty is the sample standard deviation." if show_std else ""
+    uncertainty = (
+        " When at least two seeds are available, uncertainty is the sample "
+        "standard deviation."
+        if show_std
+        else ""
+    )
     column_spec = f"llc{'r' * len(methods)}"
     if policy_labels:
         column_spec += f"{'r' * (len(policy_labels) - 1)}|r"

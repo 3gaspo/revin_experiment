@@ -21,43 +21,44 @@ of the forward normalization layer, and whether RevIN's affine parameters alter
 that effect.}
 
 \section{Implementation details}
-Two paired contrasts are run:
+Eight paired contrasts are run:
 \begin{center}
 \begin{tabular}{lll}
 \toprule
 Forward transform & Data-space loss & Normalized loss \\
 \midrule
+None & \code{none\_mse} & \code{none\_nmse} \\
+Global standardization & \code{standard\_mse} & \code{standard\_nmse} \\
+Mean only & \code{mean\_only\_mse} & \code{mean\_only\_nmse} \\
+Scale only & \code{scale\_only\_mse} & \code{scale\_only\_nmse} \\
 Non-affine instance & \code{instance\_mse} & \code{instance\_nmse} \\
+Median--MAD & \code{median\_mad\_mse} & \code{median\_mad\_nmse} \\
 Affine RevIN & \code{revin\_mse} & \code{revin\_nmse} \\
+Global MIN & \code{min\_mse} & \code{min\_nmse} \\
 \bottomrule
 \end{tabular}
 \end{center}
 Architecture, seed, batch composition, learning rate, and epoch budget are held
-fixed within every pair.  The project supports MSE, MAE, nMSE, nMAE, and
-relative MSE, but this paper comparison focuses on MSE versus nMSE.
+fixed within every pair. The paper comparison focuses on MSE versus nMSE.
 
-Before splitting, the loader automatically applies the sibling dataset
-\code{config.json}: top-level and \code{revin} user exclusions are combined with
-run-specific additions and recorded in each seed directory. This curated list
-does not replace the separate constant-window audit required by nMSE.
+The loader merges shared, RevIN-scoped, and run-specific user exclusions and
+records them in every seed directory. This does not replace the separate
+constant-window audit required by nMSE.
 
 \textbf{Loss implementation:} \code{src/utils/pipeline.py}\\
 \textbf{Experiment orchestration:} \code{src/scripts/experiment.py}
 
-The small sweep covers Traffic, Electricity, and Solar, four settings,
-PatchTST, and the six core methods. The full sweep expands to six datasets, six
-settings, and all loss/normalization variants while retaining PatchTST; ultra
-adds DLinear. All publication profiles use three seeds and
-exactly 10,000 optimizer steps, with validation every 1,000 steps and
-horizon-strided evaluation. Final
-tables always use test MSE in data space, show sample standard deviations, and
-state the row multiplier. Macro summaries give each dataset--setting pair equal
-weight and include a test-selected standard/instance oracle only as an
-optimistic reference.
+The root \code{revin.slurm} front runs signature-aware training and table
+stages; resubmission skips current seed and table artifacts.
+
+Small covers five datasets, the three shared default settings, PatchTST, and 16
+component methods; full adds all four original ETT panels and two settings,
+for nine datasets and five settings. Ultra adds DLinear. Publication runs
+use three seeds and 10,000 steps, validating every 1,000 steps. Tables report
+data-space test MSE and seed deviations. Validation selection and the optimistic
+test oracle use every scheduled method by default.
 
 \section{Interpretation}
-An nMSE-trained model can win on data-space MSE because balanced gradients learn
-a mapping that generalizes across heterogeneous scales.  Training curves from
-MSE and nMSE have different units and should not be compared by absolute height;
-selection should use the common validation metric.
+nMSE can improve data-space MSE by balancing heterogeneous scales. MSE and nMSE
+training curves have different units; select with a common validation metric.
 \end{document}
