@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=revin
+#SBATCH --job-name=exotic
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -10,9 +10,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
-# Complete resumable workflow. Select test, small, full, or ultra here or at submission.
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
-EXPERIMENT_FAMILY=core
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-small}"
+EXPERIMENT_FAMILY=exotic
 STAGES="${STAGES:-train,tables}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"

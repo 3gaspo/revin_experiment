@@ -1,6 +1,6 @@
 #!/bin/bash
 # Configure and orchestrate the complete RevIN workflow.
-# Submit ../../revin.slurm; source this implementation only for local debugging.
+# Submit one root family front; source this implementation only for local debugging.
 set -euo pipefail
 
 log() { printf '%s %s\n' "$(date -Is)" "$*"; }
@@ -8,6 +8,7 @@ log_section() { printf '\n%s %s\n' "$(date -Is)" "$*"; }
 log_error() { printf '%s %s\n' "$(date -Is)" "$*" >&2; }
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-core}"
 STAGES_SPEC="${STAGES:-train,tables}"
 ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$ROOT"
@@ -21,9 +22,7 @@ elif [ -z "${VIRTUAL_ENV:-}" ]; then
 fi
 export PYTHONPATH="$ROOT/src"
 
-DEFAULT_SMALL_SETTINGS="168:24 336:48 504:168"
-DEFAULT_FULL_SETTINGS="$DEFAULT_SMALL_SETTINGS 336:96 336:720"
-DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
+DEFAULT_SETTINGS="168:24 336:48 504:168 336:96 336:720"
 DEFAULT_SEEDS="1 2 3"
 DEFAULT_EPOCHS=10000
 DEFAULT_STEPS=10000
@@ -32,26 +31,34 @@ DEFAULT_LOGGING_EVAL_FREQ=1000
 DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment"
 DEFAULT_SKIP_COMPLETED=true
 
-# The staged publication matrix isolates the questions supported by the current
-# implementation. Core methods cross the four original forward-normalization
-# choices with data-space and normalized-space MSE. Component methods add the
-# independently removable statistics, robust statistics, and global MIN.
-# Full/ultra additionally test centering/transform variants under both losses.
-CORE_METHODS="none_mse none_nmse standard_mse standard_nmse instance_mse instance_nmse revin_mse revin_nmse"
-COMPONENT_METHODS="$CORE_METHODS mean_only_mse mean_only_nmse scale_only_mse scale_only_nmse median_mad_mse median_mad_nmse min_mse min_nmse"
-EXTENDED_METHODS="$COMPONENT_METHODS revin_last_mse revin_last_nmse revin_arcsinh_mse revin_arcsinh_nmse"
-CORE_TABLE_METHODS="$CORE_METHODS"
-COMPONENT_TABLE_METHODS="none_mse none_nmse mean_only_mse mean_only_nmse scale_only_mse scale_only_nmse instance_mse instance_nmse median_mad_mse median_mad_nmse"
-MODULATION_TABLE_METHODS="instance_mse instance_nmse revin_mse revin_nmse min_mse min_nmse"
-TRANSFORM_TABLE_METHODS="instance_mse instance_nmse revin_last_mse revin_last_nmse revin_arcsinh_mse revin_arcsinh_nmse"
+# Publication methods are split into independent fronts. They share the same
+# run directory and per-seed completion contract, but keep family-specific
+# workflow markers and tables.
+CORE_METHODS="none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse"
+NMSE_METHODS="none_nmse standard_nmse"
+EXOTIC_METHODS="mean_only_mse mean_only_nmse scale_only_mse scale_only_nmse median_mad_mse median_mad_nmse revin_last_mse revin_last_nmse revin_arcsinh_mse revin_arcsinh_nmse"
+MIN_METHODS="min_mse min_nmse"
+TEST_METHODS="standard_mse instance_mse instance_nmse min_nmse"
+
+case "$EXPERIMENT_FAMILY" in
+  core) FAMILY_METHODS="$CORE_METHODS" ;;
+  nmse) FAMILY_METHODS="$NMSE_METHODS" ;;
+  exotic) FAMILY_METHODS="$EXOTIC_METHODS" ;;
+  min) FAMILY_METHODS="$MIN_METHODS" ;;
+  *) log_error "EXPERIMENT_FAMILY must be core, nmse, exotic, or min (got $EXPERIMENT_FAMILY)"; exit 2 ;;
+esac
 
 case "$EXPERIMENT_MODE" in
   test)
+    if [ "$EXPERIMENT_FAMILY" != core ]; then
+      log_error "test mode is available only through the core revin.slurm front"
+      exit 2
+    fi
     DEFAULT_DATASETS="electricity"
     DEFAULT_SETTINGS="504:168"
     DEFAULT_SEEDS="1"
     DEFAULT_MODELS="patchtst"
-    DEFAULT_METHODS="standard_mse standard_nmse instance_mse instance_nmse mean_only_nmse scale_only_nmse median_mad_nmse min_nmse"
+    DEFAULT_METHODS="$TEST_METHODS"
     DEFAULT_EPOCHS=2000
     DEFAULT_STEPS=2000
     DEFAULT_VALID_EVAL_FREQ=200
@@ -59,22 +66,19 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment_test"
     ;;
   small)
-    DEFAULT_DATASETS="traffic electricity solar weather exchange_rate"
-    DEFAULT_SETTINGS="$DEFAULT_SMALL_SETTINGS"
+    DEFAULT_DATASETS="traffic electricity solar"
     DEFAULT_MODELS="patchtst"
-    DEFAULT_METHODS="$COMPONENT_METHODS"
+    DEFAULT_METHODS="$FAMILY_METHODS"
     ;;
   full)
-    DEFAULT_DATASETS="ETTh1 ETTh2 ETTm1 ETTm2 traffic electricity solar weather exchange_rate"
-    DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
+    DEFAULT_DATASETS="traffic electricity solar weather exchange_rate ETTh1 ETTh2 ETTm1 ETTm2"
     DEFAULT_MODELS="patchtst"
-    DEFAULT_METHODS="$EXTENDED_METHODS"
+    DEFAULT_METHODS="$FAMILY_METHODS"
     ;;
   ultra)
-    DEFAULT_DATASETS="ETTh1 ETTh2 ETTm1 ETTm2 traffic electricity solar weather exchange_rate"
-    DEFAULT_SETTINGS="$DEFAULT_FULL_SETTINGS"
+    DEFAULT_DATASETS="traffic electricity solar weather exchange_rate ETTh1 ETTh2 ETTm1 ETTm2"
     DEFAULT_MODELS="dlinear patchtst"
-    DEFAULT_METHODS="$EXTENDED_METHODS"
+    DEFAULT_METHODS="$FAMILY_METHODS"
     ;;
   *) log_error "EXPERIMENT_MODE must be test, small, full, or ultra (got $EXPERIMENT_MODE)"; exit 2 ;;
 esac
@@ -108,6 +112,7 @@ BATCH_SIZE="${BATCH_SIZE:-256}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
 EVAL_STRIDE="${EVAL_STRIDE:-horizon}"
 OUT_ROOT="${OUT_ROOT:-$DEFAULT_OUT_ROOT}"
+TABLE_OUTPUT_ROOT="$OUT_ROOT/tables/$EXPERIMENT_FAMILY"
 SKIP_COMPLETED="${SKIP_COMPLETED:-$DEFAULT_SKIP_COMPLETED}"
 GENERATE_SUMMARY="${GENERATE_SUMMARY:-true}"
 STRICT_SUMMARY="${STRICT_SUMMARY:-true}"
@@ -183,8 +188,12 @@ method_args() {
 }
 
 configuration_signature() {
-  local dataset="$1" lags="$2" horizon="$3" model="$4" method="$5" stride="$6"
-  RUN_SIGNATURE="v1|dataset=$dataset|lags=$lags|horizon=$horizon|model=$model|method=$method|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$stride|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ"
+  local dataset="$1" lags="$2" horizon="$3" model="$4" method="$5" stride="$6" source_config="$7"
+  local dataset_config_sha256=none
+  if [ -f "$source_config" ]; then
+    dataset_config_sha256="$(sha256sum "$source_config" | cut -d' ' -f1)"
+  fi
+  RUN_SIGNATURE="v2|dataset=$dataset|lags=$lags|horizon=$horizon|model=$model|method=$method|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$stride|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ|dataset_config_sha256=$dataset_config_sha256"
 }
 
 validate_setting() {
@@ -196,8 +205,7 @@ validate_setting() {
 
 pending_seeds() {
   local output="$1"
-  local source_config="$2"
-  local signature="$3"
+  local signature="$2"
   local seed
   local seed_root
   PENDING_SEED_LIST=()
@@ -211,8 +219,7 @@ pending_seeds() {
       { ! grep -Fq '"valid1"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
       { ! grep -Fq '"valid2"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
       ! grep -Fq '"window_anchor": "query_t"' "$seed_root/dataset_config.json" ||
-      ! grep -Eq "^[[:space:]]+steps: $STEPS$" "$seed_root/config.yaml" ||
-      { [ -f "$source_config" ] && [ "$source_config" -nt "$seed_root/results.json" ]; }; then
+      ! grep -Eq "^[[:space:]]+steps: $STEPS$" "$seed_root/config.yaml"; then
       PENDING_SEED_LIST+=("$seed")
     fi
   done
@@ -236,10 +243,10 @@ run_training() {
         for method in "${METHOD_LIST[@]}"; do
           method_args "$method"
           output="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}"
-          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride"
+          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride" "$dataset_config"
           signature="$RUN_SIGNATURE"
           PENDING_SEED_LIST=("${SEED_LIST[@]}")
-          if [ "$SKIP_COMPLETED" = true ]; then pending_seeds "$output" "$dataset_config" "$signature"; fi
+          if [ "$SKIP_COMPLETED" = true ]; then pending_seeds "$output" "$signature"; fi
           if [ "${#PENDING_SEED_LIST[@]}" -eq 0 ]; then
             log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method seeds=$SEEDS_CSV"
           else
@@ -283,22 +290,10 @@ contains_method() {
   return 1
 }
 
-filter_method_spec() {
-  local spec="$1"
-  local suffix
-  local -a candidates
-  FILTERED_SUFFIXES=()
-  read -r -a candidates <<< "${spec//,/ }"
-  for suffix in "${candidates[@]}"; do
-    if contains_method "$suffix"; then FILTERED_SUFFIXES+=("$suffix"); fi
-  done
-}
-
 run_tables() {
   local dataset_arg setting_arg method_arg summary_arg oracle_arg model split suffix
-  local group group_index output table_spec summary_baseline
+  local output summary_baseline
   local -a setting_dirs table_methods summary_methods oracle_methods result_args
-  local -a table_groups table_specs
   setting_dirs=()
   for setting in "${SETTING_LIST[@]}"; do
     validate_setting "$setting"
@@ -323,65 +318,34 @@ run_tables() {
       summary_baseline="${summary_methods[0]}"
     fi
 
-    table_groups=(core components modulation transforms)
-    table_specs=(
-      "$CORE_TABLE_METHODS"
-      "$COMPONENT_TABLE_METHODS"
-      "$MODULATION_TABLE_METHODS"
-      "$TRANSFORM_TABLE_METHODS"
-    )
-
     for split in test1 test2; do
-      for group_index in "${!table_groups[@]}"; do
-        group="${table_groups[$group_index]}"
-        table_spec="${table_specs[$group_index]}"
-        if [ "$group" = components ] &&
-          ! contains_method mean_only_mse && ! contains_method mean_only_nmse; then
-          continue
-        fi
-        if [ "$group" = modulation ] &&
-          ! contains_method min_mse && ! contains_method min_nmse; then
-          continue
-        fi
-        if [ "$group" = transforms ] &&
-          ! contains_method revin_last_mse && ! contains_method revin_last_nmse &&
-          ! contains_method revin_arcsinh_mse && ! contains_method revin_arcsinh_nmse; then
-          continue
-        fi
-        filter_method_spec "$table_spec"
-        if [ "${#FILTERED_SUFFIXES[@]}" -eq 0 ]; then continue; fi
-        table_methods=()
-        for suffix in "${FILTERED_SUFFIXES[@]}"; do
-          table_methods+=("${model}_${suffix}")
-        done
-        method_arg="$(IFS=,; echo "${table_methods[*]}")"
-        output="$OUT_ROOT/results_${model}_${split}_${group}_mse.tex"
-        if [ "$group" = core ]; then
-          output="$OUT_ROOT/results_${model}_${split}_mse.tex"
-        fi
-        result_args=(
-          "$OUT_ROOT" --split "$split" --metric mse
-          --datasets "$dataset_arg" --settings "$setting_arg"
-          --methods "$method_arg" --show-std --decimals 2
-          --output "$output"
-        )
-        if [ "$group" = core ] && [ "${#oracle_methods[@]}" -gt 0 ]; then
-          result_args+=(--selection-methods "$oracle_arg")
-        fi
-        if [ "$group" = core ] && [ "$GENERATE_SUMMARY" = true ] &&
-          [ "${#summary_methods[@]}" -gt 0 ]; then
-          result_args+=(
-            --summary-output "$OUT_ROOT/summary_${model}_${split}_mse.json"
-            --summary-methods "$summary_arg" --oracle-methods "$oracle_arg"
-            --baseline-method "$summary_baseline"
-            --expected-seeds "$SEEDS_CSV"
-          )
-          if [ "$STRICT_SUMMARY" = true ]; then result_args+=(--strict-summary); fi
-        fi
-        printf '\n%s table model=%s split=%s group=%s metric=mse output=%s\n' \
-          "$(date -Is)" "$model" "$split" "$group" "$output"
-        srun --ntasks=1 python -m utils.results "${result_args[@]}"
+      table_methods=()
+      for suffix in "${METHOD_LIST[@]}"; do
+        table_methods+=("${model}_${suffix}")
       done
+      method_arg="$(IFS=,; echo "${table_methods[*]}")"
+      output="$TABLE_OUTPUT_ROOT/results_${model}_${split}_mse.tex"
+      result_args=(
+        "$OUT_ROOT" --split "$split" --metric mse
+        --datasets "$dataset_arg" --settings "$setting_arg"
+        --methods "$method_arg" --show-std --decimals 2
+        --output "$output"
+      )
+      if [ "${#oracle_methods[@]}" -gt 0 ]; then
+        result_args+=(--selection-methods "$oracle_arg")
+      fi
+      if [ "$GENERATE_SUMMARY" = true ] && [ "${#summary_methods[@]}" -gt 0 ]; then
+        result_args+=(
+          --summary-output "$TABLE_OUTPUT_ROOT/summary_${model}_${split}_mse.json"
+          --summary-methods "$summary_arg" --oracle-methods "$oracle_arg"
+          --baseline-method "$summary_baseline"
+          --expected-seeds "$SEEDS_CSV"
+        )
+        if [ "$STRICT_SUMMARY" = true ]; then result_args+=(--strict-summary); fi
+      fi
+      printf '\n%s table family=%s model=%s split=%s metric=mse output=%s\n' \
+        "$(date -Is)" "$EXPERIMENT_FAMILY" "$model" "$split" "$output"
+      srun --ntasks=1 python -m utils.results "${result_args[@]}"
     done
   done
 }
@@ -398,12 +362,11 @@ verify_table_inputs() {
       [ "$stride" != horizon ] || stride="$H"
       for model in "${MODEL_LIST[@]}"; do
         for method in "${METHOD_LIST[@]}"; do
-          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride"
+          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride" "$dataset_config"
           for seed in "${SEED_LIST[@]}"; do
             seed_root="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}/seed_$seed"
             if [ ! -s "$seed_root/results.json" ] || [ ! -s "$seed_root/run.complete" ] ||
-              [ "$(head -n 1 "$seed_root/run.complete" 2>/dev/null || true)" != "$RUN_SIGNATURE|seed=$seed" ] ||
-              { [ -f "$dataset_config" ] && [ "$dataset_config" -nt "$seed_root/results.json" ]; }; then
+              [ "$(head -n 1 "$seed_root/run.complete" 2>/dev/null || true)" != "$RUN_SIGNATURE|seed=$seed" ]; then
               log_error "missing completed input $seed_root"
               return 1
             fi
@@ -415,38 +378,22 @@ verify_table_inputs() {
   return 0
 }
 
-WORKFLOW_STATE_DIR="$OUT_ROOT/.workflow"
+WORKFLOW_STATE_DIR="$OUT_ROOT/.workflow/$EXPERIMENT_FAMILY"
 TABLE_INPUT_NAME=run.complete
-TRAIN_STAGE_SIGNATURE="v1|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$EVAL_STRIDE|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ"
-TABLE_STAGE_SIGNATURE="v2|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|summary_methods=$SUMMARY_METHODS_SPEC|oracle_methods=$ORACLE_METHODS_SPEC|baseline=$BASELINE_METHOD|strict=$STRICT_SUMMARY"
+TRAIN_STAGE_SIGNATURE="v2|family=$EXPERIMENT_FAMILY|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$EVAL_STRIDE|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ"
+TABLE_STAGE_SIGNATURE="v3|family=$EXPERIMENT_FAMILY|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|summary_methods=$SUMMARY_METHODS_SPEC|oracle_methods=$ORACLE_METHODS_SPEC|baseline=$BASELINE_METHOD|strict=$STRICT_SUMMARY"
 TABLE_REQUIRED_OUTPUTS=()
 for model in "${MODEL_LIST[@]}"; do
   for split in test1 test2; do
-    filter_method_spec "$CORE_TABLE_METHODS"
-    if [ "${#FILTERED_SUFFIXES[@]}" -gt 0 ]; then
-      TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/results_${model}_${split}_mse.tex")
-      if [ "$GENERATE_SUMMARY" = true ]; then
-        filter_method_spec "$SUMMARY_METHODS_SPEC"
-        if [ "${#FILTERED_SUFFIXES[@]}" -gt 0 ]; then
-          TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/summary_${model}_${split}_mse.json")
-          TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/summary_${model}_${split}_mse.tex")
-        fi
-      fi
-    fi
-    if contains_method mean_only_mse || contains_method mean_only_nmse; then
-      TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/results_${model}_${split}_components_mse.tex")
-    fi
-    if contains_method min_mse || contains_method min_nmse; then
-      TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/results_${model}_${split}_modulation_mse.tex")
-    fi
-    if contains_method revin_last_mse || contains_method revin_last_nmse ||
-      contains_method revin_arcsinh_mse || contains_method revin_arcsinh_nmse; then
-      TABLE_REQUIRED_OUTPUTS+=("$OUT_ROOT/results_${model}_${split}_transforms_mse.tex")
+    TABLE_REQUIRED_OUTPUTS+=("$TABLE_OUTPUT_ROOT/results_${model}_${split}_mse.tex")
+    if [ "$GENERATE_SUMMARY" = true ]; then
+      TABLE_REQUIRED_OUTPUTS+=("$TABLE_OUTPUT_ROOT/summary_${model}_${split}_mse.json")
+      TABLE_REQUIRED_OUTPUTS+=("$TABLE_OUTPUT_ROOT/summary_${model}_${split}_mse.tex")
     fi
   done
 done
 
-log_section "workflow start kind=revin experiment_mode=$EXPERIMENT_MODE stages=$STAGES_SPEC skip_completed=$SKIP_COMPLETED configurations=$TOTAL_CONFIGURATIONS seed_runs=$TOTAL_SEED_RUNS datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC"
+log_section "workflow start kind=revin family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE stages=$STAGES_SPEC skip_completed=$SKIP_COMPLETED configurations=$TOTAL_CONFIGURATIONS seed_runs=$TOTAL_SEED_RUNS datasets=$DATASETS_SPEC settings=$SETTINGS_SPEC models=$MODELS_SPEC methods=$METHODS_SPEC seeds=$SEEDS_SPEC"
 source "$ROOT/src/slurm/stage_train.sh"
 source "$ROOT/src/slurm/stage_tables.sh"
-log_section "workflow done kind=revin output=$OUT_ROOT"
+log_section "workflow done kind=revin family=$EXPERIMENT_FAMILY output=$OUT_ROOT"
