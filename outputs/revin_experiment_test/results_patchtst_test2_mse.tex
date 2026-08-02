@@ -1,0 +1,11 @@
+\begin{table}[htbp]
+\centering
+\caption{MSE on test2. When at least two seeds are available, uncertainty is the sample standard deviation. Validation-selected uses the corresponding validation split; the test oracle is optimistic.}
+\begin{tabular}{llcrrrrr|r}
+\toprule
+Dataset & $L$--$H$ & Scale & patchtst\_standard\_mse & patchtst\_standard\_nmse & patchtst\_instance\_mse & patchtst\_instance\_nmse & validation-selected & test-oracle \\
+\midrule
+electricity & 504--168 & $\times 10^{6}$ & 2.27 & 4.20 & 0.31 & \textbf{0.21} & 0.21 & 0.21 \\
+\bottomrule
+\end{tabular}
+\end{table}
