@@ -1,1 +1,0 @@
-v1|mode=test|datasets=electricity|settings=504:168|models=patchtst|methods=standard_mse standard_nmse instance_mse instance_nmse mean_only_nmse scale_only_nmse median_mad_nmse min_nmse|seeds=1|epochs=2000|steps=2000|batch_size=256|learning_rate=1e-5|eval_stride=horizon|valid_eval_freq=200|logging_eval_freq=200

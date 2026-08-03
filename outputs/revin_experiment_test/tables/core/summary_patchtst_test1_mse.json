@@ -1,0 +1,90 @@
+{
+  "split": "test1",
+  "metric": "mse",
+  "aggregation": "equal weight per dataset/setting; paired complete seeds only",
+  "configuration_count": 1,
+  "common_seeds": [
+    1
+  ],
+  "baseline_method": "patchtst_standard_mse",
+  "methods": {
+    "patchtst_standard_mse": {
+      "macro_mean": 40522416.0,
+      "seed_std": null,
+      "seed_variance": null,
+      "mean_within_run_loss_variance": 1.015454444868862e+18,
+      "mean_relative_improvement_percent": 0.0
+    },
+    "patchtst_instance_mse": {
+      "macro_mean": 11533513.0,
+      "seed_std": null,
+      "seed_variance": null,
+      "mean_within_run_loss_variance": 2.034548685542523e+17,
+      "mean_relative_improvement_percent": 71.53794334474036
+    },
+    "patchtst_instance_nmse": {
+      "macro_mean": 9242711.0,
+      "seed_std": null,
+      "seed_variance": null,
+      "mean_within_run_loss_variance": 1.7194231554637824e+17,
+      "mean_relative_improvement_percent": 77.19111565312394
+    },
+    "patchtst_min_nmse": {
+      "macro_mean": 9238798.0,
+      "seed_std": null,
+      "seed_variance": null,
+      "mean_within_run_loss_variance": 1.7156513151844352e+17,
+      "mean_relative_improvement_percent": 77.2007720368894
+    }
+  },
+  "validation_selected": {
+    "selection": "lowest mean valid1 metric per dataset/setting",
+    "candidates": [
+      "patchtst_standard_mse",
+      "patchtst_instance_mse",
+      "patchtst_instance_nmse",
+      "patchtst_min_nmse"
+    ],
+    "macro_mean": 9242711.0,
+    "seed_std": null,
+    "seed_variance": null,
+    "mean_within_run_loss_variance": 1.7194231554637824e+17,
+    "mean_relative_improvement_percent": 77.19111565312394,
+    "selection_counts": {
+      "patchtst_instance_nmse": 1
+    },
+    "selections": [
+      {
+        "dataset": "electricity",
+        "setting": "504_168",
+        "method": "patchtst_instance_nmse"
+      }
+    ]
+  },
+  "oracle": {
+    "selection": "lowest mean test metric per dataset/setting (optimistic)",
+    "candidates": [
+      "patchtst_standard_mse",
+      "patchtst_instance_mse",
+      "patchtst_instance_nmse",
+      "patchtst_min_nmse"
+    ],
+    "macro_mean": 9238798.0,
+    "seed_std": null,
+    "seed_variance": null,
+    "mean_within_run_loss_variance": 1.7156513151844352e+17,
+    "mean_relative_improvement_percent": 77.2007720368894,
+    "selection_counts": {
+      "patchtst_min_nmse": 1
+    },
+    "selections": [
+      {
+        "dataset": "electricity",
+        "setting": "504_168",
+        "method": "patchtst_min_nmse"
+      }
+    ]
+  },
+  "missing_results": [],
+  "missing_expected_seeds": []
+}

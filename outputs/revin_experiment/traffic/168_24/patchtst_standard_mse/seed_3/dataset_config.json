@@ -1,0 +1,32 @@
+{
+  "window_anchor": "query_t",
+  "csv_path": "/home/h61084/codes/revin_experiment/../datasets/traffic/traffic.csv",
+  "config_path": "/home/h61084/codes/revin_experiment/../datasets/traffic/config.json",
+  "config_keys": [
+    "aggr",
+    "aggr_period",
+    "date_col",
+    "drop_users",
+    "target_cols"
+  ],
+  "drop_users_from_config": [
+    181,
+    743
+  ],
+  "drop_users_from_run": [],
+  "drop_users_applied": [
+    181,
+    743
+  ],
+  "dropped_columns": [
+    "181",
+    "743"
+  ],
+  "target_cols_from_config": null,
+  "target_cols_from_run": null,
+  "target_cols_applied": null,
+  "date_col_applied": "date",
+  "aggr_applied": null,
+  "aggr_period_applied": "h",
+  "retained_users": 860
+}
