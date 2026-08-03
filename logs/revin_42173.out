@@ -1,0 +1,47 @@
+
+2026-08-03T19:15:20+02:00 workflow start kind=revin family=core experiment_mode=small stages=train,tables skip_completed=true configurations=90 seed_runs=270 datasets=traffic electricity solar settings=168:24 336:48 504:168 336:96 336:720 models=patchtst methods=none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse seeds=1 2 3
+
+2026-08-03T19:15:20+02:00 stage start name=train
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=168 horizon=24 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:20+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=48 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=504 horizon=168 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=96 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:21+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=traffic lags=336 horizon=720 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=none_mse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=standard_mse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=instance_mse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=instance_nmse seeds=1,2,3
+2026-08-03T19:15:22+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=revin_mse seeds=1,2,3
+2026-08-03T19:15:23+02:00 skip complete dataset=electricity lags=168 horizon=24 model=patchtst method=revin_nmse seeds=1,2,3
+2026-08-03T19:15:23+02:00 skip complete dataset=electricity lags=336 horizon=48 model=patchtst method=none_mse seeds=1,2,3
+
+2026-08-03T19:15:23+02:00 configuration=38/90 dataset=electricity lags=336 horizon=48 model=patchtst method=standard_mse requested_seeds=1,2,3 run_seeds=1,2,3 batch_size=256 learning_rate=1e-5 epochs=10000 steps=10000 eval_stride=48 valid_eval_frequency=1000 logging_frequency=1000 overrides=normalization.name=standard ~normalization.kwargs.affine training.loss=mse
+2026-08-03T19:15:26 INFO utils.dataset | loaded dataset config path=/home/h61084/codes/revin_experiment/../datasets/electricity/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users', 'target_cols']
+2026-08-03T19:15:27 INFO utils.dataset | loaded dataset name=electricity users=312 dropped_users=[6, 57, 106, 113, 127, 143, 182, 245, 298] config=/home/h61084/codes/revin_experiment/../datasets/electricity/config.json
+2026-08-03T19:15:29 INFO root | training patchtst/standard on cuda -> /home/h61084/codes/revin_experiment/outputs/revin_experiment/electricity/336_48/patchtst_standard_mse/seed_1
+2026-08-03T19:17:11 INFO utils.pipeline | step=1000 train_interval=1.47289e+08 valid={'valid1': {'mse': 21749772.0, 'nmse': 6960.12646484375, 'mae': 1207.1826171875, 'nmae': 11.693506240844727, 'relative_mse': 31.283132553100586}, 'valid2': {'mse': 3859762.5, 'nmse': 7694.474609375, 'mae': 944.723876953125, 'nmae': 17.40183448791504, 'relative_mse': 166.6068878173828}}
