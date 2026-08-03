@@ -1,0 +1,44 @@
+CLUSTER EXPERIMENT STATUS
+Updated: 2026-08-03
+
+LATEST COMPLETED JOB
+Job ID: 42057
+Run/profile: EXPERIMENT_MODE=test sbatch revin.slurm (core family)
+State: completed successfully on 2026-08-02 at 19:03:26 +02:00
+Artifacts synchronized locally: yes
+Analyzed locally: yes
+Analysis note: All 4/4 configurations and the tables stage completed. Stderr is
+empty, and the four synchronized result files contain finite metrics.
+
+CURRENT OR NEXT CLUSTER JOBS
+1. Job ID: 42059
+   Run/profile: EXPERIMENT_MODE=small sbatch revin.slurm (core family)
+   State: stopped at the Slurm time limit on 2026-08-03 at 17:58:21 +02:00;
+   no Python, CUDA, or out-of-memory error is present.
+   Progress: configurations 1-37 are complete and reusable (111/270 seed
+   runs). Two more seeds from configuration 38 finished in the log, but its
+   completion markers were not recognized by the continuation, so all three
+   seeds of configuration 38 are being rerun.
+   Artifacts synchronized locally: partial; 75 earlier run.complete files are
+   local, but the most recent cluster outputs were not pushed.
+
+2. Job ID: 42173
+   Run/profile: EXPERIMENT_MODE=small sbatch revin.slurm (core family)
+   State: running at the last pulled log snapshot (2026-08-03 at 19:17:11
+   +02:00); stderr is empty.
+   Progress: skipped complete configurations 1-37, restarted configuration 38,
+   and reached step 1000 for its first seed in the pulled log.
+   Artifacts synchronized locally: no outputs from this continuation; logs only.
+
+3. Job ID: not present in the pulled files
+   Run/profile: EXPERIMENT_MODE=full sbatch revin.slurm (core family)
+   State: awaiting the small run, per the submission handoff.
+   Dependency: not verifiable from logs. Confirm on the cluster that this job
+   depends on successful completion of job 42173 (or its continuation), not
+   afterok:42059; job 42059 timed out, so an afterok dependency on it will not
+   release.
+
+NEXT ACTION
+After job 42173 finishes, synchronize its logs and lightweight outputs, then
+confirm that the queued full job is released. If small hits the time limit
+again, resubmit the same small command and update the full dependency.
