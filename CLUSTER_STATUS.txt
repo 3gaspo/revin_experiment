@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 LATEST COMPLETED JOB
 Job ID: 42057
@@ -24,8 +24,9 @@ CURRENT OR NEXT CLUSTER JOBS
 
 2. Job ID: 42173
    Run/profile: EXPERIMENT_MODE=small sbatch revin.slurm (core family)
-   State: running at the last pulled log snapshot (2026-08-03 at 19:17:11
-   +02:00); stderr is empty.
+   State: still running, per the 2026-08-04 supervision update. The last pulled
+   log snapshot is from 2026-08-03 at 19:17:11 +02:00 and has empty stderr;
+   newer progress has not yet been synchronized locally.
    Progress: skipped complete configurations 1-37, restarted configuration 38,
    and reached step 1000 for its first seed in the pulled log.
    Artifacts synchronized locally: no outputs from this continuation; logs only.
@@ -39,6 +40,9 @@ CURRENT OR NEXT CLUSTER JOBS
    release.
 
 NEXT ACTION
-After job 42173 finishes, synchronize its logs and lightweight outputs, then
-confirm that the queued full job is released. If small hits the time limit
-again, resubmit the same small command and update the full dependency.
+Continue supervising job 42173. After it finishes, synchronize its logs and
+lightweight outputs, update this record with its final progress, and then confirm
+that the queued full job is released. If small hits the time limit again,
+resubmit `EXPERIMENT_MODE=small sbatch revin.slurm`; completed seeds will be
+skipped. Update the full dependency to the successful continuation before
+expecting it to release.
