@@ -1,0 +1,1 @@
+v2|dataset=solar|lags=504|horizon=168|model=patchtst|method=instance_nmse|epochs=10000|steps=10000|batch_size=256|learning_rate=1e-5|eval_stride=168|valid_eval_freq=1000|logging_eval_freq=1000|dataset_config_sha256=63efd5cad9c1900de6b918acbe6a9a60f1b972e9a9d9ed1b6702e4e36fdf4093|seed=2

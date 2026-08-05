@@ -1,0 +1,1 @@
+v2|dataset=electricity|lags=168|horizon=24|model=patchtst|method=standard_mse|epochs=10000|steps=10000|batch_size=256|learning_rate=1e-5|eval_stride=24|valid_eval_freq=1000|logging_eval_freq=1000|dataset_config_sha256=cf76829f1a1b54d0e612585456f115fc5c025db7f88fc205ab606b65eaa02cab|seed=1
