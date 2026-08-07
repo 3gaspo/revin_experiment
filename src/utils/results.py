@@ -11,8 +11,15 @@ from itertools import product
 from pathlib import Path
 from statistics import fmean, stdev, variance
 
+from experiment_runs import SelectedRun, load_manifest, select_identity_runs, write_report_manifest
 
 LOGGER = logging.getLogger(__name__)
+RUN_SELECTION = {
+    "pipeline_config": {},
+    "config_policy": "distinct",
+    "repeat_policy": "selected",
+    "purposes": [],
+}
 
 
 def normalise_setting(setting):
@@ -42,33 +49,80 @@ def _history_validation_mean(path: Path, split: str, metric: str):
 def discover_runs(root: Path, split: str, metric: str):
     """Return metric summaries indexed by dataset, setting, method, and seed."""
     runs = {}
-    for path in sorted(root.rglob("results.json")):
-        parts = path.relative_to(root).parts
-        if len(parts) < 5:
-            continue
-        dataset, setting, method = parts[0], parts[1], "/".join(parts[2:-2])
-        match = re.fullmatch(r"seed_(-?\d+)", parts[-2])
-        if match is None:
-            continue
-        seed = int(match.group(1))
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        summary = payload.get(split, {}).get(metric)
-        if summary is None and split.startswith("valid"):
-            mean = _history_validation_mean(path, split, metric)
-            if mean is None:
+    for selected in _selected_runs(root):
+        identity = selected.manifest["identity"]
+        dataset = str(identity["dataset"])
+        setting = f"{identity['lookback']}_{identity['horizon']}"
+        for seed_text, state in selected.manifest.get("seed_status", {}).items():
+            if state.get("status") != "completed":
                 continue
-            summary = {"mean": mean}
-        if summary is None:
-            continue
-        std = float(summary.get("std", 0.0))
-        record = {
-            "mean": float(summary["mean"]),
-            "std": std,
-            "variance": float(summary.get("variance", std**2)),
-            "count": int(summary.get("count", 0)),
-        }
-        runs.setdefault((dataset, setting, method), {})[seed] = record
+            seed = int(seed_text)
+            path = selected.run_dir / f"seed_{seed}" / "results.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            summary = payload.get(split, {}).get(metric)
+            if summary is None and split.startswith("valid"):
+                mean = _history_validation_mean(path, split, metric)
+                if mean is None:
+                    continue
+                summary = {"mean": mean}
+            if summary is None:
+                continue
+            std = float(summary.get("std", 0.0))
+            record = {
+                "mean": float(summary["mean"]),
+                "std": std,
+                "variance": float(summary.get("variance", std**2)),
+                "count": int(summary.get("count", 0)),
+            }
+            seed_records = runs.setdefault((dataset, setting, selected.label), {})
+            if seed in seed_records:
+                previous = seed_records[seed]
+                repetitions = previous.pop("_selected_runs", 1)
+                total = repetitions + 1
+                record = {
+                    key: (previous[key] * repetitions + record[key]) / total
+                    for key in ("mean", "std", "variance", "count")
+                }
+                record["count"] = int(round(record["count"]))
+                record["_selected_runs"] = total
+            else:
+                record["_selected_runs"] = 1
+            seed_records[seed] = record
     return runs
+
+
+def _selected_runs(root: Path) -> list[SelectedRun]:
+    root = root.expanduser().resolve()
+    identity_roots = sorted(
+        {path.parent.parent for path in root.rglob("manifest.json") if path.parent.name.startswith("run_") and "archive" not in path.relative_to(root).parts}
+    )
+    selected: list[SelectedRun] = []
+    for identity_root in identity_roots:
+        manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
+        if any(manifest["status"] == "completed" for manifest in manifests):
+            selected.extend(
+                select_identity_runs(
+                    identity_root,
+                    requested_pipeline=RUN_SELECTION["pipeline_config"],
+                    config_policy=RUN_SELECTION["config_policy"],
+                    repeat_policy=RUN_SELECTION["repeat_policy"],
+                    purposes=RUN_SELECTION["purposes"],
+                )
+            )
+    return selected
+
+
+def _expand_methods(root: Path, requested):
+    if not requested:
+        return requested
+    available = sorted({selected.label for selected in _selected_runs(root)})
+    expanded = []
+    for name in requested:
+        for label in available:
+            if label == name or label.startswith(f"{name}__") or label.startswith(f"{name}_run_"):
+                if label not in expanded:
+                    expanded.append(label)
+    return expanded
 
 
 def discover(root: Path, split: str, metric: str):
@@ -296,6 +350,21 @@ def generate_results_table(
     output = Path(output) if output else root / f"results_{split}_{metric}.tex"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(table, encoding="utf-8")
+    write_report_manifest(
+        output.parent / "report_manifest.json",
+        inputs=_selected_runs(root),
+        config_policy=RUN_SELECTION["config_policy"],
+        repeat_policy=RUN_SELECTION["repeat_policy"],
+        filters={
+            "pipeline": RUN_SELECTION["pipeline_config"],
+            "purposes": RUN_SELECTION["purposes"],
+            "datasets": datasets,
+            "settings": settings,
+            "methods": methods,
+            "split": split,
+            "metric": metric,
+        },
+    )
     return output
 
 
@@ -588,6 +657,27 @@ def _csv_arg(value):
     return value.split(",") if value else None
 
 
+def _value(text):
+    lowered = text.casefold()
+    if lowered in {"true", "false"}:
+        return lowered == "true"
+    try:
+        return int(text)
+    except ValueError:
+        try:
+            return float(text)
+        except ValueError:
+            return text
+
+
+def _pipeline_pairs(values):
+    output = {}
+    for item in values:
+        key, value = item.split("=", 1)
+        output[key] = _value(value)
+    return output
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -614,10 +704,24 @@ def main():
     parser.add_argument("--baseline-method")
     parser.add_argument("--expected-seeds")
     parser.add_argument("--strict-summary", action="store_true")
+    parser.add_argument("--pipeline-config", action="append", default=[])
+    parser.add_argument("--config-policy", choices=["distinct", "latest", "selected", "average"], default="distinct")
+    parser.add_argument("--repeat-policy", choices=["distinct", "latest", "selected", "average"], default="selected")
+    parser.add_argument("--purpose", action="append", default=[])
     args = parser.parse_args()
+    RUN_SELECTION.update(
+        pipeline_config=_pipeline_pairs(args.pipeline_config),
+        config_policy=args.config_policy,
+        repeat_policy=args.repeat_policy,
+        purposes=args.purpose,
+    )
+    root = Path(args.experiment_dir)
     datasets = _csv_arg(args.datasets)
     settings = _csv_arg(args.settings)
-    methods = _csv_arg(args.methods)
+    methods = _expand_methods(root, _csv_arg(args.methods))
+    selection_methods = _expand_methods(root, _csv_arg(args.selection_methods) or _csv_arg(args.oracle_methods))
+    summary_methods = _expand_methods(root, _csv_arg(args.summary_methods) or methods)
+    oracle_methods = _expand_methods(root, _csv_arg(args.oracle_methods))
     output = generate_results_table(
         args.experiment_dir,
         args.output,
@@ -628,7 +732,7 @@ def main():
         args.show_std,
         args.decimals,
         settings,
-        _csv_arg(args.selection_methods) or _csv_arg(args.oracle_methods),
+        selection_methods,
     )
     LOGGER.info("wrote table path=%s", output)
     if args.summary_output:
@@ -639,9 +743,9 @@ def main():
             args.split,
             datasets,
             settings,
-            _csv_arg(args.summary_methods) or methods,
-            _csv_arg(args.oracle_methods),
-            args.baseline_method,
+            summary_methods,
+            oracle_methods,
+            (_expand_methods(root, [args.baseline_method]) or [args.baseline_method])[0] if args.baseline_method else None,
             [int(seed) for seed in _csv_arg(args.expected_seeds) or []],
             args.strict_summary,
         )

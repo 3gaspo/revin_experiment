@@ -57,5 +57,5 @@ seed: 1
 seeds: null
 
 output:
-  dir: outputs/revin_experiment/electricity/168_24
+  dir: outputs/manual_debug/electricity/168_24
   name: patchtst_revin_nmse

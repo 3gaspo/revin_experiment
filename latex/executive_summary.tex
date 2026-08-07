@@ -1,0 +1,147 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=17mm]{geometry}
+\usepackage{booktabs,tabularx,array,xcolor,caption,fancyhdr,hyperref}
+\definecolor{navy}{HTML}{17365D}
+\definecolor{green}{HTML}{047857}
+\definecolor{blue}{HTML}{2563A6}
+\definecolor{lightblue}{HTML}{EAF2FA}
+\hypersetup{colorlinks=true,linkcolor=navy,urlcolor=navy}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\scriptsize\color{navy}\textbf{Reversible instance normalization}}
+\rhead{\scriptsize\color{gray}Archived results through 7 August 2026}
+\cfoot{\scriptsize\color{gray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\setlength{\headheight}{13pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\captionsetup{font=small,labelfont={bf,color=navy},skip=3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\sectionbar}[1]{\vspace{2pt}{\large\bfseries\color{navy}#1}\par\vspace{2pt}\color{black}}
+\newcommand{\callout}[1]{\colorbox{lightblue}{\parbox{0.96\linewidth}{\small #1}}}
+
+\begin{document}
+{\huge\bfseries\color{navy}Reversible instance normalization}\par
+{\Large\color{blue}Executive summary of obtained results}\par
+\vspace{5pt}
+
+\callout{\textbf{Decision.} Across the corrected 15-setting core grid,
+instance normalization is strongly beneficial relative to global standard
+normalization. The affine RevIN layer changes results by less than 0.1\% at the
+median, while normalized-loss training helps mainly on Test1 and is mixed on
+Test2. Tables~\ref{tab:aggregate} and~\ref{tab:ablations} contain the complete
+quantitative support for these conclusions.}
+
+\sectionbar{Evidence completeness}
+\begin{table}[h]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}Yrrrrr@{}}
+\toprule
+\textbf{Archived core evidence} & \textbf{Datasets} & \textbf{Settings} &
+\textbf{Methods} & \textbf{Seeds} & \textbf{Complete seed runs} \\
+\midrule
+Traffic, Electricity, Solar; PatchTST & 3 & 5 & 6 & 3 & 270 / 270 \\
+\bottomrule
+\end{tabularx}
+\caption{The 90 method configurations have non-empty metrics, dataset
+configuration, completion signature, and criterion plot for all three seeds.
+The 94 schema-1 manifests consist of these 90 configurations plus four isolated
+test configurations.}
+\end{table}
+
+\sectionbar{Aggregate normalization result}
+\begin{table}[h]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}Yrr@{}}
+\toprule
+\textbf{Method} & \textbf{Test1 gain} & \textbf{Test2 gain} \\
+\midrule
+Instance normalization, MSE & 14.44\% & 16.50\% \\
+Instance normalization, nMSE & 17.51\% & 16.65\% \\
+Affine RevIN, MSE & 14.57\% & 16.58\% \\
+Affine RevIN, nMSE & \textbf{17.57\%} & \textbf{16.70\%} \\
+Validation-selected method & 16.20\% & 16.75\% \\
+Optimistic test oracle & 17.72\% & 17.05\% \\
+\bottomrule
+\end{tabularx}
+\caption{Mean relative MSE improvement over global standard normalization,
+equal-weighting all 15 dataset/setting rows. An instance-normalized method is
+best on 15/15 Test1 rows and 14/15 Test2 rows; global standard wins only Solar
+$336{:}720$ on Test2.}
+\label{tab:aggregate}
+\end{table}
+
+\sectionbar{Affine and training-loss ablations}
+\begin{table}[h]
+\centering\footnotesize
+\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}
+\toprule
+\textbf{Paired comparison over 15 settings} & \textbf{Test1 median} &
+\textbf{Test1 max} & \textbf{Test2 median} & \textbf{Test2 max} \\
+\midrule
+$|$affine--non-affine$|$, MSE training & 0.097\% & 0.739\% & 0.069\% & 0.455\% \\
+$|$affine--non-affine$|$, nMSE training & 0.073\% & 0.239\% & 0.051\% & 0.204\% \\
+\midrule
+\textbf{nMSE minus MSE training, non-affine} & \textbf{Test1} & & \textbf{Test2} & \\
+Mean relative effect & +4.147\% & & $-0.019$\% & \\
+Median relative effect & +0.545\% & & +0.314\% & \\
+Rows improved & 12/15 & & 10/15 & \\
+Worst row & $-0.855$\% & & $-7.833$\% & \\
+\bottomrule
+\end{tabularx}
+\caption{The affine layer is numerically negligible. Normalized-loss training
+has a positive Test1 mean driven by Electricity but no aggregate Test2 gain;
+its worst Test2 row is Electricity $168{:}24$.}
+\label{tab:ablations}
+\end{table}
+
+\newpage
+\sectionbar{Run-level uncertainty}
+\begin{table}[h]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}Yrrrrr@{}}
+\toprule
+\textbf{Example} & \textbf{Seed 1} & \textbf{Seed 2} & \textbf{Seed 3} &
+\textbf{Mean} & \textbf{Sample SD} \\
+\midrule
+Electricity $504{:}168$, Test1 MSE, non-affine instance & 11.07M & 0.261M &
+0.221M & 3.85M & 6.25M \\
+\bottomrule
+\end{tabularx}
+\caption{The run seed fixes user partition, sampling, initialization, and
+optimization together. Reported seed variation is therefore total run
+uncertainty rather than optimizer-only uncertainty.}
+\end{table}
+
+\sectionbar{Evidence retained before deleting artifacts}
+\small
+\begin{tabularx}{\linewidth}{@{}p{37mm}Y@{}}
+\toprule
+\textbf{Retained conclusion} & \textbf{Quantitative basis} \\
+\midrule
+Use instance normalization & 14.44--17.57\% Test1 and 16.50--16.70\% Test2
+gain versus standard normalization in Table~\ref{tab:aggregate}. \\
+Do not require affine RevIN & Median paired effects are 0.051--0.097\%, with
+all maxima below 0.74\%, in Table~\ref{tab:ablations}. \\
+Keep nMSE selectable & +4.147\% mean on Test1 but $-0.019$\% on Test2, with a
+$-7.833$\% worst row, in Table~\ref{tab:ablations}. \\
+Report total run uncertainty & The representative three-seed spread is
+0.221M--11.07M and SD 6.25M in the uncertainty table. \\
+\bottomrule
+\end{tabularx}
+
+\vspace{6pt}
+\callout{\textbf{Historical boundary.} These are results of the corrected
+current protocol, not a resubmission or numerical reproduction of the rejected
+ECML/AALTD paper. The original submission remains read-only guidance in the
+workspace-level \code{latex/submissions} directory.}
+
+\vfill
+{\scriptsize\color{gray}Source: archived small-core result JSONs and generated
+summary tables, migrated without numerical change into 94 schema-1 manifests.
+Gains are relative per-setting improvements before equal-weight averaging.}
+\end{document}

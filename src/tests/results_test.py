@@ -8,24 +8,48 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from experiment_runs import allocate_run, mark_status
 from utils.results import generate_average_summary, generate_results_table
 
 
-def write_result(root, dataset, method, seed, mean, valid_mean):
-    output = root / dataset / "168_24" / method / f"seed_{seed}"
-    output.mkdir(parents=True)
-    payload = {
-        "valid1": {"mse": {"mean": valid_mean}},
-        "test1": {
-            "mse": {
-                "mean": mean,
-                "std": 2.0,
-                "variance": 4.0,
-                "count": 10,
+def write_run(root, dataset, method, means, valid_means):
+    _, normalization, loss = method.split("_", 2)
+    identity = root / dataset / "168_24" / "patchtst" / normalization / loss
+    seeds = list(range(1, len(means) + 1))
+    allocation = allocate_run(
+        identity,
+        project="revin_experiment",
+        workflow="core",
+        dataset=dataset,
+        lookback=168,
+        horizon=24,
+        backbone="patchtst",
+        model_config_order=["normalization", "loss"],
+        model_config={"normalization": normalization, "loss": loss},
+        pipeline_config={},
+        seeds=seeds,
+        display_name=method,
+    )
+    artifacts = []
+    for seed, (mean, valid_mean) in enumerate(zip(means, valid_means), 1):
+        relative = f"seed_{seed}/results.json"
+        output = allocation.run_dir / relative
+        output.parent.mkdir(parents=True)
+        payload = {
+            "valid1": {"mse": {"mean": valid_mean}},
+            "test1": {
+                "mse": {
+                    "mean": mean,
+                    "std": 2.0,
+                    "variance": 4.0,
+                    "count": 10,
+                }
             }
         }
-    }
-    (output / "results.json").write_text(json.dumps(payload), encoding="utf-8")
+        output.write_text(json.dumps(payload), encoding="utf-8")
+        mark_status(allocation.run_dir, "completed", seed=seed, required_artifacts=[relative])
+        artifacts.append(relative)
+    mark_status(allocation.run_dir, "completed", required_artifacts=artifacts)
 
 
 def main():
@@ -47,24 +71,8 @@ def main():
                 (21.0, 21.0),
             ),
         ):
-            for seed, mean in enumerate(standard, 1):
-                write_result(
-                    root,
-                    dataset,
-                    "patchtst_standard_mse",
-                    seed,
-                    mean,
-                    standard_valid[seed - 1],
-                )
-            for seed, mean in enumerate(instance, 1):
-                write_result(
-                    root,
-                    dataset,
-                    "patchtst_instance_nmse",
-                    seed,
-                    mean,
-                    instance_valid[seed - 1],
-                )
+            write_run(root, dataset, "patchtst_standard_mse", standard, standard_valid)
+            write_run(root, dataset, "patchtst_instance_nmse", instance, instance_valid)
 
         table = generate_results_table(
             root,
@@ -114,14 +122,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write_result(
-            root,
-            "electricity",
-            "patchtst_standard_mse",
-            1,
-            2.0,
-            2.5,
-        )
+        write_run(root, "electricity", "patchtst_standard_mse", [2.0], [2.5])
         table = generate_results_table(
             root,
             metric="mse",

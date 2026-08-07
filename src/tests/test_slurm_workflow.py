@@ -34,7 +34,7 @@ class SlurmWorkflowTest(unittest.TestCase):
         for mode in ("test)", "small)", "full)", "ultra)"):
             self.assertIn(mode, self.runner)
         self.assertTrue((ROOT / "src/slurm/stage_train.sh").is_file())
-        self.assertIn(
+        self.assertNotIn(
             "tables.complete", (ROOT / "src/slurm/stage_tables.sh").read_text()
         )
 
@@ -70,23 +70,20 @@ class SlurmWorkflowTest(unittest.TestCase):
         for variable, methods in expected.items():
             self.assertIn(f'{variable}="{methods}"', self.runner)
 
-    def test_completion_contract_reuses_small_in_full(self):
-        self.assertIn("run.complete", self.runner)
-        self.assertIn("configuration_signature()", self.runner)
-        self.assertEqual(self.runner.count('configuration_signature "$dataset"'), 2)
-        signature_line = next(
-            line for line in self.runner.splitlines() if 'RUN_SIGNATURE="v2|' in line
-        )
-        self.assertNotIn("mode=", signature_line)
-        self.assertNotIn("family=", signature_line)
-        self.assertIn("dataset_config_sha256=", signature_line)
-        self.assertNotIn('-nt "$seed_root/results.json"', self.runner)
+    def test_manifest_contract_reuses_matching_paths_across_modes(self):
+        self.assertNotIn("run.complete", self.runner)
+        self.assertIn("python -m experiment_runs allocate", self.runner)
+        self.assertIn("python -m experiment_runs pending-seeds", self.runner)
+        self.assertIn("python -m experiment_runs status", self.runner)
+        self.assertIn('--input "dataset_config=$dataset_config"', self.runner)
+        self.assertIn('--mode "$EXPERIMENT_MODE"', self.runner)
         self.assertIn(
-            'WORKFLOW_STATE_DIR="$OUT_ROOT/.workflow/$EXPERIMENT_FAMILY"',
+            'identity_root="$OUT_ROOT/$dataset/${L}_${H}/${model,,}/${normalization,,}/${loss,,}"',
             self.runner,
         )
         self.assertIn(
-            'TABLE_OUTPUT_ROOT="$OUT_ROOT/tables/$EXPERIMENT_FAMILY"', self.runner
+            'TABLE_OUTPUT_ROOT="$ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE"',
+            self.runner,
         )
         self.assertIn('summary_${model}_${split}_mse.tex', self.runner)
 

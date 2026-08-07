@@ -28,7 +28,7 @@ DEFAULT_EPOCHS=10000
 DEFAULT_STEPS=10000
 DEFAULT_VALID_EVAL_FREQ=1000
 DEFAULT_LOGGING_EVAL_FREQ=1000
-DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment"
+DEFAULT_OUT_ROOT="$ROOT/outputs/$EXPERIMENT_FAMILY"
 DEFAULT_SKIP_COMPLETED=true
 
 # Publication methods are split into independent fronts. They share the same
@@ -63,7 +63,6 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_STEPS=2000
     DEFAULT_VALID_EVAL_FREQ=200
     DEFAULT_LOGGING_EVAL_FREQ=200
-    DEFAULT_OUT_ROOT="$ROOT/outputs/revin_experiment_test"
     ;;
   small)
     DEFAULT_DATASETS="traffic electricity solar"
@@ -112,8 +111,16 @@ BATCH_SIZE="${BATCH_SIZE:-256}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
 EVAL_STRIDE="${EVAL_STRIDE:-horizon}"
 OUT_ROOT="${OUT_ROOT:-$DEFAULT_OUT_ROOT}"
-TABLE_OUTPUT_ROOT="$OUT_ROOT/tables/$EXPERIMENT_FAMILY"
+TABLE_OUTPUT_ROOT="$ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE"
 SKIP_COMPLETED="${SKIP_COMPLETED:-$DEFAULT_SKIP_COMPLETED}"
+RUN_CONFLICT_POLICY="${RUN_CONFLICT_POLICY:-overwrite_exact}"
+FORCE_RUN="${FORCE_RUN:-false}"
+TABLE_CONFIG_POLICY="${TABLE_CONFIG_POLICY:-distinct}"
+TABLE_REPEAT_POLICY="${TABLE_REPEAT_POLICY:-selected}"
+if [ "$EXPERIMENT_MODE" = test ]; then TABLE_PURPOSE="${TABLE_PURPOSE:-smoke}"; else TABLE_PURPOSE="${TABLE_PURPOSE:-publication}"; fi
+EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
+export EXPERIMENT_LAUNCH_ID
+trap 'status=$?; if [ "$status" -ne 0 ]; then python -m experiment_runs interrupt-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" || true; fi' EXIT
 GENERATE_SUMMARY="${GENERATE_SUMMARY:-true}"
 STRICT_SUMMARY="${STRICT_SUMMARY:-true}"
 BASELINE_METHOD="${BASELINE_METHOD:-standard_mse}"
@@ -187,15 +194,6 @@ method_args() {
   esac
 }
 
-configuration_signature() {
-  local dataset="$1" lags="$2" horizon="$3" model="$4" method="$5" stride="$6" source_config="$7"
-  local dataset_config_sha256=none
-  if [ -f "$source_config" ]; then
-    dataset_config_sha256="$(sha256sum "$source_config" | cut -d' ' -f1)"
-  fi
-  RUN_SIGNATURE="v2|dataset=$dataset|lags=$lags|horizon=$horizon|model=$model|method=$method|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$stride|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ|dataset_config_sha256=$dataset_config_sha256"
-}
-
 validate_setting() {
   if ! [[ "$1" =~ ^[1-9][0-9]*:[1-9][0-9]*$ ]]; then
     log_error "setting must have L:H form (got $1)"
@@ -203,31 +201,11 @@ validate_setting() {
   fi
 }
 
-pending_seeds() {
-  local output="$1"
-  local signature="$2"
-  local seed
-  local seed_root
-  PENDING_SEED_LIST=()
-  for seed in "${SEED_LIST[@]}"; do
-    seed_root="$output/seed_$seed"
-    if [ ! -s "$seed_root/results.json" ] ||
-      [ ! -s "$seed_root/config.yaml" ] ||
-      [ ! -s "$seed_root/dataset_config.json" ] ||
-      [ ! -s "$seed_root/run.complete" ] ||
-      [ "$(head -n 1 "$seed_root/run.complete" 2>/dev/null || true)" != "$signature|seed=$seed" ] ||
-      { ! grep -Fq '"valid1"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
-      { ! grep -Fq '"valid2"' "$seed_root/results.json" && [ ! -s "$seed_root/history.pt" ]; } ||
-      ! grep -Fq '"window_anchor": "query_t"' "$seed_root/dataset_config.json" ||
-      ! grep -Eq "^[[:space:]]+steps: $STEPS$" "$seed_root/config.yaml"; then
-      PENDING_SEED_LIST+=("$seed")
-    fi
-  done
-}
-
 run_training() {
   local configuration_index=0
-  local dataset data_root dataset_config setting L H stride model method output run_seeds_csv signature seed
+  local dataset data_root dataset_config setting L H stride model method run_seeds_csv seed normalization loss
+  local identity_root run_dir run_action run_signature purpose
+  local -a allocation_args pending required_artifacts
   local dataset_args=()
   for dataset in "${DATASET_LIST[@]}"; do
     data_root="$(resolve_data_root "$dataset")"
@@ -242,18 +220,37 @@ run_training() {
       for model in "${MODEL_LIST[@]}"; do
         for method in "${METHOD_LIST[@]}"; do
           method_args "$method"
-          output="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}"
-          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride" "$dataset_config"
-          signature="$RUN_SIGNATURE"
-          PENDING_SEED_LIST=("${SEED_LIST[@]}")
-          if [ "$SKIP_COMPLETED" = true ]; then pending_seeds "$output" "$signature"; fi
-          if [ "${#PENDING_SEED_LIST[@]}" -eq 0 ]; then
-            log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method seeds=$SEEDS_CSV"
+          loss="${method##*_}"
+          normalization="${method%_$loss}"
+          identity_root="$OUT_ROOT/$dataset/${L}_${H}/${model,,}/${normalization,,}/${loss,,}"
+          if [ "$EXPERIMENT_MODE" = test ]; then purpose=smoke; else purpose=publication; fi
+          allocation_args=(
+            --identity-root "$identity_root" --project revin_experiment --workflow "$EXPERIMENT_FAMILY"
+            --dataset "$dataset" --lookback "$L" --horizon "$H" --backbone "$model"
+            --model-config-order normalization,loss --model-config "normalization=$normalization" --model-config "loss=$loss"
+            --pipeline-config "training.epochs=$EPOCHS" --pipeline-config "training.steps=$STEPS"
+            --pipeline-config "training.batch_size=$BATCH_SIZE" --pipeline-config "training.learning_rate=$LEARNING_RATE"
+            --pipeline-config "evaluation.stride=$stride" --pipeline-config "training.valid_eval_freq=$VALID_EVAL_FREQ"
+            --pipeline-config "training.logging_eval_freq=$LOGGING_EVAL_FREQ" --pipeline-config "hydra_overrides=${ARGS[*]}"
+            --runtime-config training.device=gpu --runtime-config "slurm.job_id=${SLURM_JOB_ID:-}"
+            --purpose "$purpose" --mode "$EXPERIMENT_MODE" --display-name "${model}_${method}"
+            --row-config normalization --column-config loss --project-root "$ROOT"
+            --policy "$RUN_CONFLICT_POLICY" --skip-completed "$SKIP_COMPLETED" --force "$FORCE_RUN"
+            --launch-id "$EXPERIMENT_LAUNCH_ID"
+          )
+          for seed in "${SEED_LIST[@]}"; do allocation_args+=(--seed "$seed"); done
+          if [ -f "$dataset_config" ]; then allocation_args+=(--input "dataset_config=$dataset_config"); fi
+          if [ -n "${RUN_INDEX:-}" ]; then allocation_args+=(--run-index "$RUN_INDEX"); fi
+          IFS=$'\t' read -r run_dir run_action run_signature < <(python -m experiment_runs allocate "${allocation_args[@]}")
+          if [ "$run_action" = skip ]; then
+            log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method run=$run_dir"
           else
-            run_seeds_csv="$(IFS=,; echo "${PENDING_SEED_LIST[*]}")"
-            printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s method=%s requested_seeds=%s run_seeds=%s batch_size=%s learning_rate=%s epochs=%s steps=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
-              "$(date -Is)" "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS" "$dataset" "$L" "$H" "$model" "$method" "$SEEDS_CSV" \
-              "$run_seeds_csv" "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$STEPS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
+            run_seeds_csv="$(python -m experiment_runs pending-seeds --run-dir "$run_dir")"
+            IFS=, read -ra pending <<< "$run_seeds_csv"
+            for seed in "${pending[@]}"; do python -m experiment_runs status --run-dir "$run_dir" --status running --seed "$seed"; done
+            printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s normalization=%s loss=%s requested_seeds=%s run_seeds=%s run=%s computation_signature=%s batch_size=%s learning_rate=%s epochs=%s steps=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
+              "$(date -Is)" "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS" "$dataset" "$L" "$H" "$model" "$normalization" "$loss" \
+              "$SEEDS_CSV" "$run_seeds_csv" "$run_dir" "$run_signature" "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$STEPS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
             srun --ntasks=1 python -m scripts.experiment \
               data.root="$data_root" data.name="$dataset" data.eval_stride="$stride" \
               "${dataset_args[@]}" \
@@ -264,15 +261,21 @@ run_training() {
               training.valid_eval_freq="$VALID_EVAL_FREQ" \
               training.logging_eval_freq="$LOGGING_EVAL_FREQ" \
               "${ARGS[@]}" seeds="[$run_seeds_csv]" \
-              output.dir="$OUT_ROOT/$dataset/${L}_${H}" \
-              output.name="${model}_${method}"
-            for seed in "${PENDING_SEED_LIST[@]}"; do
-              if [ ! -s "$output/seed_$seed/results.json" ]; then
-                log_error "training completed without required result $output/seed_$seed/results.json"
+              output.dir="$run_dir" output.name= \
+              hydra.run.dir="$run_dir/hydra/$EXPERIMENT_LAUNCH_ID"
+            required_artifacts=()
+            for seed in "${pending[@]}"; do
+              if [ ! -s "$run_dir/seed_$seed/results.json" ] || [ ! -s "$run_dir/seed_$seed/config.yaml" ] || [ ! -s "$run_dir/seed_$seed/dataset_config.json" ]; then
+                log_error "training completed without required results in $run_dir/seed_$seed"
                 exit 1
               fi
-              printf '%s\n' "$signature|seed=$seed" > "$output/seed_$seed/run.complete"
+              python -m experiment_runs status --run-dir "$run_dir" --status completed --seed "$seed" \
+                --artifact "seed_$seed/results.json" --artifact "seed_$seed/config.yaml" --artifact "seed_$seed/dataset_config.json"
             done
+            for seed in "${SEED_LIST[@]}"; do
+              required_artifacts+=(--artifact "seed_$seed/results.json" --artifact "seed_$seed/config.yaml" --artifact "seed_$seed/dataset_config.json")
+            done
+            python -m experiment_runs status --run-dir "$run_dir" --status completed "${required_artifacts[@]}"
           fi
           configuration_index=$((configuration_index + 1))
         done
@@ -291,7 +294,7 @@ contains_method() {
 }
 
 run_tables() {
-  local dataset_arg setting_arg method_arg summary_arg oracle_arg model split suffix
+  local dataset_arg setting_arg method_arg summary_arg oracle_arg model split suffix pair
   local output summary_baseline
   local -a setting_dirs table_methods summary_methods oracle_methods result_args
   setting_dirs=()
@@ -329,8 +332,14 @@ run_tables() {
         "$OUT_ROOT" --split "$split" --metric mse
         --datasets "$dataset_arg" --settings "$setting_arg"
         --methods "$method_arg" --show-std --decimals 2
+        --config-policy "$TABLE_CONFIG_POLICY" --repeat-policy "$TABLE_REPEAT_POLICY"
+        --purpose "$TABLE_PURPOSE"
         --output "$output"
       )
+      if [ -n "${TABLE_PIPELINE_CONFIGS:-}" ]; then
+        for pair in ${TABLE_PIPELINE_CONFIGS}; do result_args+=(--pipeline-config "$pair"); done
+      fi
+      if [ -n "${TABLE_PURPOSE:-}" ]; then result_args+=(--purpose "$TABLE_PURPOSE"); fi
       if [ "${#oracle_methods[@]}" -gt 0 ]; then
         result_args+=(--selection-methods "$oracle_arg")
       fi
@@ -350,38 +359,6 @@ run_tables() {
   done
 }
 
-verify_table_inputs() {
-  local dataset data_root dataset_config setting L H stride model method seed seed_root
-  for dataset in "${DATASET_LIST[@]}"; do
-    data_root="$(resolve_data_root "$dataset")"
-    dataset_config="$data_root/$dataset/config.json"
-    for setting in "${SETTING_LIST[@]}"; do
-      L="${setting%%:*}"
-      H="${setting##*:}"
-      stride="$EVAL_STRIDE"
-      [ "$stride" != horizon ] || stride="$H"
-      for model in "${MODEL_LIST[@]}"; do
-        for method in "${METHOD_LIST[@]}"; do
-          configuration_signature "$dataset" "$L" "$H" "$model" "$method" "$stride" "$dataset_config"
-          for seed in "${SEED_LIST[@]}"; do
-            seed_root="$OUT_ROOT/$dataset/${L}_${H}/${model}_${method}/seed_$seed"
-            if [ ! -s "$seed_root/results.json" ] || [ ! -s "$seed_root/run.complete" ] ||
-              [ "$(head -n 1 "$seed_root/run.complete" 2>/dev/null || true)" != "$RUN_SIGNATURE|seed=$seed" ]; then
-              log_error "missing completed input $seed_root"
-              return 1
-            fi
-          done
-        done
-      done
-    done
-  done
-  return 0
-}
-
-WORKFLOW_STATE_DIR="$OUT_ROOT/.workflow/$EXPERIMENT_FAMILY"
-TABLE_INPUT_NAME=run.complete
-TRAIN_STAGE_SIGNATURE="v2|family=$EXPERIMENT_FAMILY|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|epochs=$EPOCHS|steps=$STEPS|batch_size=$BATCH_SIZE|learning_rate=$LEARNING_RATE|eval_stride=$EVAL_STRIDE|valid_eval_freq=$VALID_EVAL_FREQ|logging_eval_freq=$LOGGING_EVAL_FREQ"
-TABLE_STAGE_SIGNATURE="v3|family=$EXPERIMENT_FAMILY|mode=$EXPERIMENT_MODE|datasets=$DATASETS_SPEC|settings=$SETTINGS_SPEC|models=$MODELS_SPEC|methods=$METHODS_SPEC|seeds=$SEEDS_SPEC|summary_methods=$SUMMARY_METHODS_SPEC|oracle_methods=$ORACLE_METHODS_SPEC|baseline=$BASELINE_METHOD|strict=$STRICT_SUMMARY"
 TABLE_REQUIRED_OUTPUTS=()
 for model in "${MODEL_LIST[@]}"; do
   for split in test1 test2; do

@@ -109,7 +109,7 @@ def run_experiments(cfg: DictConfig):
         seeded = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         seeded.seed = int(seed)
         seeded.seeds = None
-        seeded.output.name = f"{base_name}/seed_{int(seed)}"
+        seeded.output.name = f"{base_name}/seed_{int(seed)}" if base_name else f"seed_{int(seed)}"
         results[int(seed)] = run_experiment(seeded)
     return results
 

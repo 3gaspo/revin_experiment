@@ -19,8 +19,8 @@ src/
   slurm/stage_*.sh        separate training and table stages
   utils/                  data, normalization, losses, training, plots, tables
   tests/                  lightweight checks
-latex/ECML_submission/    paper source
-latex/experiment_guides/  concise experiment protocols
+latex/experiment_guideline.tex  current protocol and practical specification
+latex/executive_summary.tex     analyzed current results
 datasets/                 tracked configs and optional repo-local CSVs
 weights/                  placeholder; unused by the current backbones
 outputs/                  runs, figures, metrics, summaries, and tables
@@ -96,7 +96,12 @@ python -m scripts.experiment \
 
 `seeds` expands a configuration into isolated `seed_N/` runs. Each run saves its
 resolved config, applied dataset config, model, history, criterion plot, losses,
-and JSON summary. The
+and JSON summary. A seed is the single source of randomness for its complete
+run: the same value fixes the seen/unseen user partition, random data/window
+sampling, model initialization, and optimization. No separate partition,
+sampling, or initialization seeds are used. Consequently, variation across
+`seed_N` runs intentionally measures the combined effect of all stochastic
+choices rather than optimizer uncertainty alone. The
 JSON reports the mean, population standard deviation, population variance, and
 count of per-point loss contributions. Training histories contain raw step
 losses, interval-average train losses, and validation metrics at the same
@@ -148,11 +153,10 @@ EXPERIMENT_MODE=test sbatch revin.slurm
 Test mode uses only Electricity at `504:168`, PatchTST, and seed 1. It runs
 `standard_mse`, `instance_mse`, `instance_nmse`, and `min_nmse`: 4
 configurations and 4 seed-runs. Each run uses exactly 2,000 optimizer steps
-with validation and progress logging every 200 steps. The `v2` completion
-signature deliberately invalidates the previous eight-method smoke outputs,
-so this reduced gate must be rerun once. Outputs go to
-`outputs/revin_experiment_test`, so they cannot overwrite or pollute the
-publication sweep. Inspect all `seed_N/results.json`, histories, plots, and the
+with validation and progress logging every 200 steps. Outputs use the same
+`outputs/core` identity tree as larger core modes; purpose and exact pipeline
+settings in the manifest keep smoke eligibility explicit. Inspect all
+`seed_N/results.json`, histories, plots, and the
 generated tables before continuing.
 
 Every front defaults to the ordered `STAGES=train,tables` workflow.
@@ -170,8 +174,8 @@ steps. They differ only in datasets and models:
   and ETTm2 with PatchTST.
 - `ultra`: the full grid with DLinear and PatchTST.
 
-The fronts contribute these disjoint method families to the shared
-`outputs/revin_experiment` run tree:
+The fronts contribute these disjoint workflow roots: `outputs/core`,
+`outputs/nmse`, `outputs/exotic`, and `outputs/min`.
 
 | Front | Methods | Small configurations / seeds | Full configurations / seeds | Ultra configurations / seeds |
 |---|---|---:|---:|---:|
@@ -190,23 +194,52 @@ EXPERIMENT_MODE=ultra sbatch revin.slurm
 
 Run the other families later by replacing the front, for example
 `EXPERIMENT_MODE=small sbatch nmse.slurm`. Small can safely precede full, then
-ultra. Every mode defaults to `SKIP_COMPLETED=true`. The per-seed signature does
-not contain the mode or family and hashes dataset-config content rather than
-its modification time: a full run therefore skips the exact small
-dataset/setting/model/method/seed results and trains only the added datasets;
-ultra similarly adds only DLinear after full. A seed is reusable only when
-`results.json`, its resolved configuration and dataset provenance, and its
-signature-matched `run.complete` are current. Each family owns
-`.workflow/<family>/train.complete`, `.workflow/<family>/tables.complete`, and
-`tables/<family>/` outputs. Set `SKIP_COMPLETED=false` to force the selected
-workflow. If a sequential allocation exceeds the time limit, resubmit the same
-command; completed seeds are skipped.
+ultra. Every mode defaults to `SKIP_COMPLETED=true`. Mode selects a subset of
+the same family tree and is not a path or computation-signature field: full
+therefore reuses exact small runs and ultra adds only DLinear. A seed is
+reusable only when its current manifest, input fingerprints, computation
+signature, and required artifacts all agree. Reports are written below
+`outputs/reports/<family>/<mode>/`. Set `SKIP_COMPLETED=false` to force the
+exact selected computation; its previous manifest is retained. If a sequential
+allocation exceeds the time limit, resubmit the same command; completed seeds
+are skipped.
 
 Tables requested with seed standard deviations remain valid in test mode: a
 single seed has no estimable sample standard deviation, so test cells show the
 value without `±`; macro uncertainty fields use `--`. Publication modes retain
 their multi-seed estimates. The table-stage `v3` signature rebuilds prior
-tables automatically without retraining completed runs.
+reports retain the exact selected input manifests.
+
+## Result identity and manifests
+
+Each family uses the ordered identity
+
+```text
+outputs/<family>/dataset/L_H/backbone/normalization/loss/run_n/seed_n/
+```
+
+Normalization and loss are separate model-config directories. Steps, batch
+size, learning rate, validation/logging cadence, data split, evaluation stride,
+and related training settings are pipeline configs in `run_n/manifest.json`.
+Device and Slurm placement are runtime-only. One seed fixes partitioning,
+sampling, initialization, optimization, and every other stochastic choice for
+that repetition.
+
+The current contract is `schema_version: 1`; readers accept only completed
+manifests with all declared artifacts. `RUN_CONFLICT_POLICY=overwrite_exact`
+skips an identical completed run, resumes an identical interrupted run, and
+allocates the next `run_n` for a changed pipeline. `overwrite_path` and `new`
+are explicit alternatives. Tables support
+`TABLE_CONFIG_POLICY=distinct|latest|selected|average` and
+`TABLE_REPEAT_POLICY=selected|latest|distinct|average`, plus explicit
+`TABLE_PIPELINE_CONFIGS`. Explicit filters must match even with one run.
+`SELECTED_RUNS.txt` records the automatic or pinned run per pipeline signature.
+
+The former output roots were migrated only where all identity and artifact
+evidence was available. Ninety-four completed configurations now use this
+schema. Their original trees remain under
+`outputs/archive/legacy_pre_schema_v1_2026-08-07/` for audit and are never read
+by current tables.
 
 ## Sweep overrides
 
@@ -255,7 +288,7 @@ scheduler, shell, or Python failures.
 ## Result interpretation
 
 For every family, model, and test split, the table stage writes
-`tables/<family>/results_<model>_<split>_mse.tex` with seed mean $\pm$ sample
+`outputs/reports/<family>/<mode>/results_<model>_<split>_mse.tex` with seed mean $\pm$ sample
 standard deviation and an explicit per-row `\times 10^m` multiplier. It also
 writes `summary_*.json` and `summary_*.tex` for every method scheduled by that
 front. By default, the validation-selected policy and
@@ -265,7 +298,9 @@ fewer candidates.
 
 The summaries give every dataset/setting equal weight, use only seeds complete
 for every compared method, report seed-level macro standard deviation and
-variance, and retain the mean within-run loss variance. They also report mean
+variance across complete seeded runs (including partition, sampling,
+initialization, and optimization variability), and retain the mean within-run
+loss variance. They also report mean
 per-setting relative improvement, which is more interpretable than raw MSE when
 datasets have different units. The test-selected oracle is deliberately
 optimistic and is only a reference for the potential value of choosing
@@ -275,9 +310,15 @@ The energy-distance and t-SNE diagnostics are computed separately in the
 `dataset_visu` notebook and may be imported into the paper after the forecasting
 results are reproduced. They are not part of this training launcher.
 
-## Experiment guides
+## LaTeX documents
 
-The one-page protocols under `latex/experiment_guides/` cover normalization
-components, normalized backpropagation, and centering/transform appendix runs.
-Their PDFs are kept beside the sources; ignored convenience copies may also be
-written to `outputs/pdf/`.
+`latex/experiment_guideline.tex` consolidates the normalization-component,
+normalized-backpropagation, and centering/transform protocols, including the
+current seed and artifact contracts. `latex/executive_summary.tex` records only
+the results obtained and analyzed under the current implementation. Their PDFs
+are kept beside the sources.
+
+The rejected historical ECML/AALTD submission is stored once at
+`../../../latex/submissions/ECML_AALTD_2026_reject/`. It is read-only guidance,
+is not being resubmitted, and must not be modified or treated as the current
+experiment specification.
