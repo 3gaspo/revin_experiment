@@ -197,8 +197,8 @@ Run the other families later by replacing the front, for example
 ultra. Every mode defaults to `SKIP_COMPLETED=true`. Mode selects a subset of
 the same family tree and is not a path or computation-signature field: full
 therefore reuses exact small runs and ultra adds only DLinear. A seed is
-reusable only when its current manifest, input fingerprints, computation
-signature, and required artifacts all agree. Reports are written below
+reusable when its declared identity, pipeline/experiment parameters, seed set,
+status, and required artifacts agree. Reports are written below
 `outputs/reports/<family>/<mode>/`. Set `SKIP_COMPLETED=false` to force the
 exact selected computation; its previous manifest is retained. If a sequential
 allocation exceeds the time limit, resubmit the same command; completed seeds
@@ -224,6 +224,13 @@ and related training settings are pipeline configs in `run_n/manifest.json`.
 Device and Slurm placement are runtime-only. One seed fixes partitioning,
 sampling, initialization, optimization, and every other stochastic choice for
 that repetition.
+
+Run identity never fingerprints or hashes source files, Slurm fronts, datasets,
+weights, logs, outputs, or directories. Plain provenance paths may be recorded
+in a manifest, but they do not affect reuse. Code and data changes are manual
+rerun decisions; use `RUN_CONFLICT_POLICY=new` for another repeat with unchanged
+parameters. The manifest `schema_version` is changed only for a deliberate
+global artifact-contract break.
 
 The current contract is `schema_version: 1`; readers accept only completed
 manifests with all declared artifacts. `RUN_CONFLICT_POLICY=overwrite_exact`

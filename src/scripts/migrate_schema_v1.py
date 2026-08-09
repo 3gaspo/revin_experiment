@@ -19,6 +19,11 @@ ARCHIVE = OUTPUTS / "archive" / "legacy_pre_schema_v1_2026-08-07"
 CORE = {"none_mse", "standard_mse", "instance_mse", "instance_nmse", "revin_mse", "revin_nmse"}
 NMSE = {"none_nmse", "standard_nmse"}
 MIN = {"min_mse", "min_nmse"}
+PIPELINE_MARKER_FIELDS = {
+    "dataset", "lags", "horizon", "model", "method", "epochs", "steps",
+    "batch_size", "learning_rate", "eval_stride", "valid_eval_freq",
+    "logging_eval_freq",
+}
 
 
 def marker(path: Path) -> dict[str, str]:
@@ -27,11 +32,7 @@ def marker(path: Path) -> dict[str, str]:
         if "=" in item:
             key, value = item.split("=", 1)
             fields[key] = value
-    required = {
-        "dataset", "lags", "horizon", "model", "method", "epochs", "steps",
-        "batch_size", "learning_rate", "eval_stride", "valid_eval_freq",
-        "logging_eval_freq", "dataset_config_sha256", "seed",
-    }
+    required = PIPELINE_MARKER_FIELDS | {"seed"}
     missing = required - fields.keys()
     if missing:
         raise ValueError(f"cannot reconstruct {path}: missing marker fields {sorted(missing)}")
@@ -65,7 +66,9 @@ def discover():
             continue
         for marker_path in sorted(legacy_root.glob("*/*/*/seed_*/run.complete")):
             values = marker(marker_path)
-            scientific = tuple(sorted((key, value) for key, value in values.items() if key != "seed"))
+            scientific = tuple(
+                sorted((key, value) for key, value in values.items() if key in PIPELINE_MARKER_FIELDS)
+            )
             grouped[(legacy_root, scientific)].append((marker_path.parent, values))
     return grouped
 
@@ -114,8 +117,6 @@ def migrate_group(legacy_root: Path, seeds: list[tuple[Path, dict[str, str]]]) -
         display_name=method,
         row_config=["normalization"],
         column_config=["loss"],
-        inputs={"dataset_config": {"sha256": first["dataset_config_sha256"]}},
-        code_signature="legacy-revin-run-marker-v2",
         policy="new",
         skip_completed=False,
         launch_id=f"migration-{legacy_root.name}-{method}",

@@ -234,7 +234,7 @@ run_training() {
             --pipeline-config "training.logging_eval_freq=$LOGGING_EVAL_FREQ" --pipeline-config "hydra_overrides=${ARGS[*]}"
             --runtime-config training.device=gpu --runtime-config "slurm.job_id=${SLURM_JOB_ID:-}"
             --purpose "$purpose" --mode "$EXPERIMENT_MODE" --display-name "${model}_${method}"
-            --row-config normalization --column-config loss --project-root "$ROOT"
+            --row-config normalization --column-config loss
             --policy "$RUN_CONFLICT_POLICY" --skip-completed "$SKIP_COMPLETED" --force "$FORCE_RUN"
             --launch-id "$EXPERIMENT_LAUNCH_ID"
           )
