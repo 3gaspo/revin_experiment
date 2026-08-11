@@ -149,14 +149,16 @@ obtained input manifests.
 After successful completion, the workflow submits \code{publish.slurm} with an
 \code{afterok} dependency. It commits only the producer's exact stdout/stderr
 and launch-tagged run/report roots, excluding \code{*.pt}, \code{*.npy}, and
-\code{*.cbm}, then sources \code{$HOME/codes/proxy.sh} with the shared two-line
-\code{$HOME/codes/.secrets/proxy.credentials} and pushes \code{origin/main}. It never pulls
-or opens a pull request. \code{PUBLISH_RESULTS=false} disables submission; the
-publisher's \code{--job-id} option supports manual retry.
+\code{*.cbm}, then sources \path{$HOME/codes/proxy.sh} with the shared two-line
+\path{$HOME/codes/.secrets/proxy.credentials} and pushes \code{origin/main}. It never pulls
+or opens a pull request. A repository lock serializes the complete Git
+transaction and waits up to ten minutes.
+\code{PUBLISH_RESULTS=false} disables submission; the publisher's \code{--job-id}
+option supports manual retry.
 
 Ninety-four reconstructable historical configurations were migrated. Their
 source trees remain under
-\code{outputs/archive/legacy_pre_schema_v1_2026-08-07}; current readers exclude
+\path{outputs/archive/legacy_pre_schema_v1_2026-08-07}; current readers exclude
 that archive.
 
 Tables report mean and seed standard deviation, explicit row multipliers,
