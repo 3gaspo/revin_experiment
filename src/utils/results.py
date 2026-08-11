@@ -705,7 +705,7 @@ def main():
     parser.add_argument("--expected-seeds")
     parser.add_argument("--strict-summary", action="store_true")
     parser.add_argument("--pipeline-config", action="append", default=[])
-    parser.add_argument("--config-policy", choices=["distinct", "latest", "selected", "average"], default="distinct")
+    parser.add_argument("--config-policy", choices=["distinct", "latest", "average"], default="distinct")
     parser.add_argument("--repeat-policy", choices=["distinct", "latest", "selected", "average"], default="selected")
     parser.add_argument("--purpose", action="append", default=[])
     args = parser.parse_args()

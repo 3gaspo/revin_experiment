@@ -233,20 +233,43 @@ parameters. The manifest `schema_version` is changed only for a deliberate
 global artifact-contract break.
 
 The current contract is `schema_version: 1`; readers accept only completed
-manifests with all declared artifacts. `RUN_CONFLICT_POLICY=overwrite_exact`
+manifests. Finished seeds and runs remain `ready`; completion is written only
+by the owning Slurm workflow's final successful exit after every launched
+process and required artifact has finished. The completed manifest is authoritative;
+reuse does not hash or revalidate synchronized files. `RUN_CONFLICT_POLICY=overwrite_exact`
 skips an identical completed run, resumes an identical interrupted run, and
 allocates the next `run_n` for a changed pipeline. `overwrite_path` and `new`
 are explicit alternatives. Tables support
-`TABLE_CONFIG_POLICY=distinct|latest|selected|average` and
+`TABLE_CONFIG_POLICY=distinct|latest|average` and
 `TABLE_REPEAT_POLICY=selected|latest|distinct|average`, plus explicit
-`TABLE_PIPELINE_CONFIGS`. Explicit filters must match even with one run.
-`SELECTED_RUNS.txt` records the automatic or pinned run per pipeline signature.
+`TABLE_PIPELINE_CONFIGS`. Explicit filters select pipeline configurations and
+must match even with one run. `SELECTED_RUNS.txt` records only the automatic or
+pinned exact repeat per pipeline signature. Report manifests record requested
+filters and obtained inputs.
 
 The former output roots were migrated only where all identity and artifact
 evidence was available. Ninety-four completed configurations now use this
 schema. Their original trees remain under
 `outputs/archive/legacy_pre_schema_v1_2026-08-07/` for audit and are never read
 by current tables.
+
+## Publishing completed Slurm artifacts
+
+A successful root workflow automatically submits `publish.slurm` with an
+`afterok` dependency. The producer handoff contains its exact
+`logs/<job-name>_<job-id>.out`, `.err`, and launch-tagged run/report output
+directories. The publisher excludes `*.pt`, `*.npy`, and `*.cbm`, commits only
+those paths on `main`, sources `$HOME/proxy.sh`, and runs `git push origin main`.
+It never pulls or creates a pull request. Set `PUBLISH_RESULTS=false` to disable
+automatic submission.
+
+Create `.secrets/proxy.credentials` only on the cluster with the NNI on line 1
+and password on line 2, then run `chmod 600 .secrets/proxy.credentials`.
+`.secrets/` is ignored. `PROXY_SCRIPT_PATH`, `PROXY_CREDENTIALS_FILE`, and
+`PUBLISH_PARTITION` are optional overrides. Retry manually with
+`bash src/slurm/publish_results.sh --job-id <producer-job-id>`.
+The external proxy script must accept `--credentials-file <path>`, export
+`https_proxy`, set `NOEXPORT=0`, and return nonzero on failure.
 
 ## Sweep overrides
 
@@ -329,3 +352,13 @@ The rejected historical ECML/AALTD submission is stored once at
 `../../../latex/submissions/ECML_AALTD_2026_reject/`. It is read-only guidance,
 is not being resubmitted, and must not be modified or treated as the current
 experiment specification.
+
+## Maintenance workflow
+
+Every project change is recorded in `PENDING_UPDATES.md` with its scope,
+affected contracts, focused checks already completed, deferred integration
+coverage, documentation impact, and rerun requirements. Routine edits use only
+the smallest relevant smoke check. Periodic maintenance verifies pending entries
+against the implementation, runs complementary generic lightweight smoke tests,
+reconciles this README and the project LaTeX documents, and renders affected
+PDFs before resolving the entries.

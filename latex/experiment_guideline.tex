@@ -128,7 +128,7 @@ a path or computation-signature field. One seed fixes every stochastic choice.
 
 Each \code{run_n/manifest.json} uses \code{schema_version: 1}, lists declared
 parameters, optional plain provenance, required artifacts, and per-seed state,
-and has status \code{not_run}, \code{running}, \code{interrupted}, or
+and has status \code{not_run}, \code{running}, \code{ready}, \code{interrupted}, or
 \code{completed}. Run identity contains only the schema, identity/model configs,
 pipeline/experiment configs, and seeds. It never fingerprints or hashes code, Slurm
 files, data, weights, logs, outputs, or directories; those changes are manual
@@ -136,11 +136,23 @@ rerun decisions. The schema changes only for a deliberate global contract break,
 and \code{new} creates another repeat with unchanged parameters. The default
 \code{overwrite_exact} policy skips an identical
 completion, resumes an identical interruption, and creates the next run for a
-changed pipeline. Tables support distinct/latest/selected/average pipeline
-selection and selected/latest/distinct/average repeat selection. Explicit
-pipeline filters must match even with one run; \code{SELECTED_RUNS.txt} stores
-the automatic or pinned selection. Reports live at
-\code{outputs/reports/family/mode} and record exact input manifests.
+changed pipeline. Finished seeds and runs remain \code{ready}; overall completion is
+written only on the owning Slurm workflow's final successful exit. Completed manifests
+are authoritative, without later file hashing or synchronization checks. Tables
+support distinct/latest/average pipeline selection and
+selected/latest/distinct/average repeat selection. Explicit pipeline filters
+select configurations and must match even with one run;
+\code{SELECTED_RUNS.txt} stores only automatic or pinned exact repeats. Reports
+live at \code{outputs/reports/family/mode} and record requested filters and
+obtained input manifests.
+
+After successful completion, the workflow submits \code{publish.slurm} with an
+\code{afterok} dependency. It commits only the producer's exact stdout/stderr
+and launch-tagged run/report roots, excluding \code{*.pt}, \code{*.npy}, and
+\code{*.cbm}, then sources \code{$HOME/proxy.sh} with the ignored two-line
+\code{.secrets/proxy.credentials} and pushes \code{origin/main}. It never pulls
+or opens a pull request. \code{PUBLISH_RESULTS=false} disables submission; the
+publisher's \code{--job-id} option supports manual retry.
 
 Ninety-four reconstructable historical configurations were migrated. Their
 source trees remain under

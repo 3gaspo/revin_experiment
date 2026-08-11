@@ -20,7 +20,10 @@ class SlurmWorkflowTest(unittest.TestCase):
             "exotic.slurm": ("exotic", "small"),
             "min.slurm": ("min", "small"),
         }
-        self.assertEqual({path.name for path in ROOT.glob("*.slurm")}, set(fronts))
+        self.assertEqual(
+            {path.name for path in ROOT.glob("*.slurm")},
+            set(fronts) | {"publish.slurm"},
+        )
         for filename, (family, default_mode) in fronts.items():
             front = (ROOT / filename).read_text(encoding="utf-8")
             self.assertIn('STAGES="${STAGES:-train,tables}"', front)
@@ -75,6 +78,10 @@ class SlurmWorkflowTest(unittest.TestCase):
         self.assertIn("python -m experiment_runs allocate", self.runner)
         self.assertIn("python -m experiment_runs pending-seeds", self.runner)
         self.assertIn("python -m experiment_runs status", self.runner)
+        self.assertIn("--status ready", self.runner)
+        self.assertIn("python -m experiment_runs ready", self.runner)
+        self.assertIn("python -m experiment_runs complete-launch", self.runner)
+        self.assertNotIn("--status completed", self.runner)
         self.assertIn('--input "dataset_config=$dataset_config"', self.runner)
         self.assertIn('--mode "$EXPERIMENT_MODE"', self.runner)
         self.assertIn(
