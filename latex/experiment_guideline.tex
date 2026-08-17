@@ -128,16 +128,20 @@ a path or computation-signature field. One seed fixes every stochastic choice.
 
 Each \code{run_n/manifest.json} uses \code{schema_version: 1}, lists declared
 parameters, optional plain provenance, required artifacts, and per-seed state,
-and has status \code{not_run}, \code{running}, \code{ready}, \code{interrupted}, or
-\code{completed}. Run identity contains only the schema, identity/model configs,
+and has one of the four overall statuses \code{not_run}, \code{running},
+\code{interrupted}, or \code{completed}; a seed state may additionally be
+\code{ready}. Run identity contains only the schema, identity/model configs,
 pipeline/experiment configs, and seeds. It never fingerprints or hashes code, Slurm
 files, data, weights, logs, outputs, or directories; those changes are manual
 rerun decisions. The schema changes only for a deliberate global contract break,
 and \code{new} creates another repeat with unchanged parameters. The default
 \code{overwrite_exact} policy skips an identical
 completion, resumes an identical interruption, and creates the next run for a
-changed pipeline. Finished seeds and runs remain \code{ready}; overall completion is
-written only on the owning Slurm workflow's final successful exit. Completed manifests
+changed pipeline. The overall run remains \code{running} with
+\code{ready_at_utc} while finished seed states are \code{ready}; completion is
+written immediately after that configuration's producer process returns
+successfully. Later configuration or table failures preserve completed runs
+and interrupt only unfinished work. Completed manifests
 are authoritative, without later file hashing or synchronization checks. Tables
 support distinct/latest/average pipeline selection and
 selected/latest/distinct/average repeat selection. Explicit pipeline filters
@@ -146,15 +150,17 @@ select configurations and must match even with one run;
 live at \code{outputs/reports/family/mode} and record requested filters and
 obtained input manifests.
 
-After successful completion, the workflow submits \code{publish.slurm} with an
-\code{afterok} dependency. It commits only the producer's exact stdout/stderr
-and launch-tagged run/report roots, excluding \code{*.pt}, \code{*.npy}, and
-\code{*.cbm}, then sources \path{$HOME/codes/proxy.sh} with the shared two-line
-\path{$HOME/codes/.secrets/proxy.credentials} and pushes \code{origin/main}. It never pulls
-or opens a pull request. A repository lock serializes the complete Git
-transaction and waits up to ten minutes.
-\code{PUBLISH_RESULTS=false} disables submission; the publisher's \code{--job-id}
-option supports manual retry.
+Slurm workflows never submit a publisher or execute Git commands. After any
+terminal state, including failure, cancellation, or timeout, the user runs
+\code{bash publish_job.sh <job-id>} from the project root. The script verifies
+\code{main}, sources \path{$HOME/codes/proxy.sh} (or
+\code{PROXY_SCRIPT_PATH}), and fast-forward pulls \code{origin/main} before
+artifact selection or staging. It then commits only that job's exact
+stdout/stderr pair and launch-tagged run/report roots, excluding \code{*.pt},
+\code{*.npy}, and \code{*.cbm}, and pushes \code{origin/main} without opening a
+pull request. Omitting the job ID publishes all logs and lightweight outputs; a
+non-fast-forward pull stops without a merge commit, and unrelated staged paths
+remain outside the publisher commit.
 
 Ninety-four reconstructable historical configurations were migrated. Their
 source trees remain under

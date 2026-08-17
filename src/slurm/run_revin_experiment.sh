@@ -120,14 +120,13 @@ TABLE_REPEAT_POLICY="${TABLE_REPEAT_POLICY:-selected}"
 if [ "$EXPERIMENT_MODE" = test ]; then TABLE_PURPOSE="${TABLE_PURPOSE:-smoke}"; else TABLE_PURPOSE="${TABLE_PURPOSE:-publication}"; fi
 EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
 export EXPERIMENT_LAUNCH_ID
-source "$ROOT/src/slurm/publish_results.sh"
 revin_on_exit() {
   local status=$?
   trap - EXIT
   if [ "$status" -ne 0 ]; then
     python -m experiment_runs interrupt-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
     elif python -m experiment_runs complete-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
-      submit_publish_job || true
+      :
     else
       status=$?
   fi
@@ -289,6 +288,7 @@ run_training() {
               required_artifacts+=(--artifact "seed_$seed/results.json" --artifact "seed_$seed/config.yaml" --artifact "seed_$seed/dataset_config.json")
             done
             python -m experiment_runs ready --run-dir "$run_dir" "${required_artifacts[@]}"
+            python -m experiment_runs complete --run-dir "$run_dir" --launch-id "$EXPERIMENT_LAUNCH_ID"
           fi
           configuration_index=$((configuration_index + 1))
         done

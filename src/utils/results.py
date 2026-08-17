@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import math
+import os
 import re
 import sys
 from collections import Counter
@@ -11,7 +12,13 @@ from itertools import product
 from pathlib import Path
 from statistics import fmean, stdev, variance
 
-from experiment_runs import SelectedRun, load_manifest, select_identity_runs, write_report_manifest
+from experiment_runs import (
+    SelectedRun,
+    load_manifest,
+    manifest_is_selectable,
+    select_identity_runs,
+    write_report_manifest,
+)
 
 LOGGER = logging.getLogger(__name__)
 RUN_SELECTION = {
@@ -54,7 +61,7 @@ def discover_runs(root: Path, split: str, metric: str):
         dataset = str(identity["dataset"])
         setting = f"{identity['lookback']}_{identity['horizon']}"
         for seed_text, state in selected.manifest.get("seed_status", {}).items():
-            if state.get("status") != "completed":
+            if state.get("status") not in {"ready", "completed"}:
                 continue
             seed = int(seed_text)
             path = selected.run_dir / f"seed_{seed}" / "results.json"
@@ -93,13 +100,14 @@ def discover_runs(root: Path, split: str, metric: str):
 
 def _selected_runs(root: Path) -> list[SelectedRun]:
     root = root.expanduser().resolve()
+    active_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
     identity_roots = sorted(
         {path.parent.parent for path in root.rglob("manifest.json") if path.parent.name.startswith("run_") and "archive" not in path.relative_to(root).parts}
     )
     selected: list[SelectedRun] = []
     for identity_root in identity_roots:
         manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
-        if any(manifest["status"] == "completed" for manifest in manifests):
+        if any(manifest_is_selectable(manifest, allow_ready_launch_id=active_launch) for manifest in manifests):
             selected.extend(
                 select_identity_runs(
                     identity_root,
@@ -107,6 +115,7 @@ def _selected_runs(root: Path) -> list[SelectedRun]:
                     config_policy=RUN_SELECTION["config_policy"],
                     repeat_policy=RUN_SELECTION["repeat_policy"],
                     purposes=RUN_SELECTION["purposes"],
+                    allow_ready_launch_id=active_launch,
                 )
             )
     return selected
