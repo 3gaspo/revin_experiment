@@ -172,6 +172,18 @@ Then submit the benchmark smoke gate:
 EXPERIMENT_MODE=test sbatch revin.slurm
 ```
 
+Every DGX front has a matching `_selena.slurm` overflow front, for example:
+
+```bash
+EXPERIMENT_MODE=test sbatch revin_selena.slurm
+EXPERIMENT_MODE=small sbatch exotic_selena.slurm
+```
+
+Both versions source the same family workflow. `LOGS_ROOT` and `OUTPUTS_ROOT`
+default to `logs/` and `outputs/`; Selena fronts set them to `logs_selena/`
+and `outputs_selena/` and use partition `an`, exclusive non-requeued execution,
+and WCKey `P12CU:DATASCIENCE`.
+
 Test mode uses only Electricity at `504:168`, PatchTST, and seed 1. It runs
 `standard_mse`, `instance_mse`, `instance_nmse`, and `min_nmse`: 4
 configurations and 4 seed-runs. Each run uses exactly 2,000 optimizer steps
@@ -196,8 +208,8 @@ steps. They differ only in datasets and models:
   and ETTm2 with PatchTST.
 - `ultra`: the full grid with DLinear and PatchTST.
 
-The fronts contribute these disjoint workflow roots: `outputs/core`,
-`outputs/nmse`, `outputs/exotic`, and `outputs/min`.
+The fronts contribute these disjoint workflow roots under `outputs/` on DGX
+and `outputs_selena/` on Selena: `core`, `nmse`, `exotic`, and `min`.
 
 | Front | Methods | Small configurations / seeds | Full configurations / seeds | Ultra configurations / seeds |
 |---|---|---:|---:|---:|
@@ -283,6 +295,36 @@ they are ineligible for current comparisons. Reproduce affected configurations
 with `RUN_CONFLICT_POLICY=new`; the newly completed repeat then becomes the
 selected current input.
 
+## Synchronizing DGX and Selena
+
+Keep `$HOME/codes/.secrets/proxy.credentials` outside the project on both
+clusters. Its first line contains the NNI; the synchronization scripts read
+only that line and lowercase it for SSH account and home-directory paths.
+
+After updating the DGX checkout, mirror its code to Selena with:
+
+```bash
+bash sync_code_to_selena.sh
+```
+
+The transfer derives the project directory name from the checkout and makes
+Selena's code match DGX while preserving `.venv`, `.secrets`,
+`pyproject.toml`, `uv.lock`, `datasets/`, `weights/`, `outputs/`, `logs/`, and
+existing `outputs_selena/` and `logs_selena/` payloads. The Selena directory
+placeholders are mirrored, but existing contents are protected from deletion.
+Git metadata and dependency manifests are never transferred.
+
+After Selena jobs finish, copy lightweight artifacts back without deleting
+anything already present on DGX:
+
+```bash
+bash sync_results_to_dgx.sh
+```
+
+Only `outputs_selena/` and `logs_selena/` are copied in that direction, into
+the same named DGX directories. Analysis and publication remain on DGX, and
+the returned artifacts never merge into DGX `outputs/` or `logs/`.
+
 ## Publishing terminal Slurm artifacts
 
 Slurm jobs never submit a publisher or run Git commands. After any job reaches
@@ -327,7 +369,8 @@ EVAL_STRIDE=horizon EXPERIMENT_MODE=full STAGES=train,tables \
 sbatch exotic.slurm
 ```
 
-Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `EPOCHS`, `STEPS`, `OUT_ROOT`, `DATA_ROOT`,
+Other controls are `BATCH_SIZE`, `LEARNING_RATE`, `EPOCHS`, `STEPS`,
+`LOGS_ROOT`, `OUTPUTS_ROOT`, `OUT_ROOT`, `TABLE_OUTPUT_ROOT`, `DATA_ROOT`,
 `VENV_ACTIVATE`, `SUMMARY_METHODS`, `ORACLE_METHODS`, `BASELINE_METHOD`,
 `GENERATE_SUMMARY`, and `STRICT_SUMMARY`. `EVAL_STRIDE` may be `horizon` or a
 positive integer.

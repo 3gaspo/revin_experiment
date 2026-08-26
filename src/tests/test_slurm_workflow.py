@@ -8,6 +8,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class SlurmWorkflowTest(unittest.TestCase):
+    def test_cluster_sync_scripts(self):
+        code = (ROOT / "sync_code_to_selena.sh").read_text(encoding="utf-8")
+        results = (ROOT / "sync_results_to_dgx.sh").read_text(encoding="utf-8")
+        for script in (code, results):
+            self.assertIn('PROJECT_NAME="$(basename "$PROJECT_ROOT")"', script)
+            self.assertIn("sed -n '1p'", script)
+        for excluded in (
+            ".git/",
+            ".venv/",
+            ".secrets/",
+            "pyproject.toml",
+            "uv.lock",
+            "datasets/",
+            "weights/",
+            "outputs/",
+            "logs/",
+        ):
+            self.assertIn(f"--exclude='{excluded}'", code)
+        self.assertIn("selena.hpc.edf.fr", code)
+        self.assertIn("--delete", code)
+        self.assertIn("dgx-front.retd.edf.fr", results)
+        self.assertIn("--include='outputs_selena/.gitkeep'", code)
+        self.assertIn("--exclude='outputs_selena/***'", code)
+        self.assertIn("--include='logs_selena/.gitkeep'", code)
+        self.assertIn("--exclude='logs_selena/***'", code)
+        self.assertIn('"$SOURCE_ROOT/outputs_selena/"', results)
+        self.assertIn('"$SOURCE_ROOT/logs_selena/"', results)
+        self.assertNotIn("--delete", results)
+
     def setUp(self):
         self.runner = (ROOT / "src/slurm/run_revin_experiment.sh").read_text(
             encoding="utf-8"
@@ -22,7 +51,7 @@ class SlurmWorkflowTest(unittest.TestCase):
         }
         self.assertEqual(
             {path.name for path in ROOT.glob("*.slurm")},
-            set(fronts),
+            set(fronts) | {name.replace(".slurm", "_selena.slurm") for name in fronts},
         )
         for filename, (family, default_mode) in fronts.items():
             front = (ROOT / filename).read_text(encoding="utf-8")
@@ -31,9 +60,24 @@ class SlurmWorkflowTest(unittest.TestCase):
             self.assertIn(f'EXPERIMENT_MODE="${{EXPERIMENT_MODE:-{default_mode}}}"', front)
             self.assertIn('source "$PROJECT_ROOT/src/slurm/run_revin_experiment.sh"', front)
             self.assertIn("#SBATCH --ntasks=1", front)
+            selena_path = ROOT / filename.replace(".slurm", "_selena.slurm")
+            selena = selena_path.read_text(encoding="utf-8")
+            self.assertIn(f"EXPERIMENT_FAMILY={family}", selena)
+            self.assertIn(f'EXPERIMENT_MODE="${{EXPERIMENT_MODE:-{default_mode}}}"', selena)
+            self.assertIn("#SBATCH --partition=an", selena)
+            self.assertIn("#SBATCH --output=logs_selena/%x_%j.out", selena)
+            self.assertIn("#SBATCH --exclusive", selena)
+            self.assertIn("#SBATCH --no-requeue", selena)
+            self.assertIn("#SBATCH --wckey=P12CU:DATASCIENCE", selena)
+            self.assertIn('OUTPUTS_ROOT="$PROJECT_ROOT/outputs_selena"', selena)
+            self.assertIn('LOGS_ROOT="$PROJECT_ROOT/logs_selena"', selena)
+            self.assertIn('EXPERIMENT_LAUNCH_ID="selena_${SLURM_JOB_ID', selena)
 
         self.assertNotIn("RUN_MODE", self.runner)
         self.assertNotIn("full|large", self.runner)
+        self.assertIn('LOGS_ROOT="${LOGS_ROOT:-$ROOT/logs}"', self.runner)
+        self.assertIn('OUTPUTS_ROOT="${OUTPUTS_ROOT:-$ROOT/outputs}"', self.runner)
+        self.assertIn('DEFAULT_OUT_ROOT="$OUTPUTS_ROOT/$EXPERIMENT_FAMILY"', self.runner)
         for mode in ("test)", "small)", "full)", "ultra)"):
             self.assertIn(mode, self.runner)
         self.assertIn(
@@ -94,7 +138,7 @@ class SlurmWorkflowTest(unittest.TestCase):
             self.runner,
         )
         self.assertIn(
-            'TABLE_OUTPUT_ROOT="$ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE"',
+            'TABLE_OUTPUT_ROOT="${TABLE_OUTPUT_ROOT:-$OUTPUTS_ROOT/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE}"',
             self.runner,
         )
         self.assertIn('summary_${model}_${split}_mse.tex', self.runner)

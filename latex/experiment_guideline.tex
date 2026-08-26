@@ -131,10 +131,14 @@ uses $336{:}96$ and $336{:}720$. Publication profiles share outputs only when
 configuration signatures match.
 
 \section{Execution, artifacts, and tables}
-Each Slurm front owns one family root: \code{outputs/core}, \code{outputs/nmse},
-\code{outputs/exotic}, or \code{outputs/min}. The ordered identity is
+Each DGX Slurm front has a matching \code{_selena.slurm} front that sources the
+same family workflow. \code{LOGS_ROOT} and \code{OUTPUTS_ROOT} default to
+\path{logs/} and \path{outputs/}; Selena overrides them to
+\path{logs_selena/} and \path{outputs_selena/}. Each front owns one family root:
+\code{core}, \code{nmse}, \code{exotic}, or \code{min}. The ordered relative
+identity below the selected output root is
 \begin{verbatim}
-outputs/family/dataset/L_H/backbone/normalization/loss/run_n/seed_n/
+family/dataset/L_H/backbone/normalization/loss/run_n/seed_n/
 \end{verbatim}
 Normalization and loss are separate model configs. Steps, batch size, learning
 rate, evaluation cadence, split, and stride are pipeline configs; device and
@@ -162,7 +166,7 @@ support distinct/latest/average pipeline selection and
 selected/latest/distinct/average repeat selection. Explicit pipeline filters
 select configurations and must match even with one run;
 \code{SELECTED_RUNS.txt} stores only automatic or pinned exact repeats. Reports
-live at \code{outputs/reports/family/mode} and record requested filters and
+live at \code{reports/family/mode} below the selected output root and record requested filters and
 obtained input manifests.
 
 Slurm workflows never submit a publisher or execute Git commands. After any

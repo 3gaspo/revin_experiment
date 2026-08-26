@@ -4,6 +4,20 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-26: Added matching Selena fronts for all four RevIN families and
+  made runtime roots explicit. `LOGS_ROOT` and `OUTPUTS_ROOT` default to
+  `logs/` and `outputs/` but remain overridable; Selena selects
+  `logs_selena/` and `outputs_selena/`, and report roots derive from the
+  selected output root. Code sync protects both artifact namespaces plus
+  cluster-local dependency state, and result sync returns only the
+  Selena-named trees without deletion. Affected contracts: shared runner,
+  eight fronts, sync pair, ignored placeholders, workflow regression, README,
+  local/shared guidance, cluster handoff, and experiment-guideline source/PDF.
+  Git Bash syntax and all five focused workflow tests passed; two LaTeX
+  passes produced three pages, all visually inspected without clipping or
+  overlap. No scientific rerun or artifact migration is required. Deferred
+  integration: submit one Selena test front and exercise both sync directions.
+
 - 2026-08-26: Removed all ten historical tracked Slurm log files from active
   `logs/` and preserved `logs/.gitkeep`, matching the workspace policy that
   retired projects alone retain old payloads. Direct inventory confirmed that

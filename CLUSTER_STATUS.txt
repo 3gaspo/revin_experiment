@@ -11,6 +11,9 @@ SCHEMA V1 CUTOVER
 - Their original trees remain under
   archive/outputs/archive/legacy_pre_schema_v1_2026-08-07/ for audit only.
 - Reports now belong under outputs/reports/<family>/<mode>.
+- Runtime roots default to logs/ and outputs/ and are overridable. Each of the
+  four DGX fronts has a scientific-equivalent Selena front selecting
+  logs_selena/ and outputs_selena/.
 - Active `outputs/` and `logs/` contain only their placeholders. Synchronized
   historical results were moved to the ignored project archive on 2026-08-25,
   and the ten historical Slurm log files were removed on 2026-08-26.
@@ -35,10 +38,14 @@ No RevIN job is currently running.
 
 1. Run `RUN_CONFLICT_POLICY=new EXPERIMENT_MODE=test sbatch revin.slurm` and
    inspect all four new current-package smoke configurations.
-2. Rerun the complete desired PatchTST core grid with the new-run policy before
+2. Run the equivalent `revin_selena.slurm` test and validate isolated Selena
+   artifacts plus both synchronization directions.
+3. Rerun the complete desired PatchTST core grid with the new-run policy before
    using any normalization conclusion.
-3. Run the remaining nMSE, exotic, MIN, and DLinear families only under the
+4. Run the remaining nMSE, exotic, MIN, and DLinear families only under the
    pinned packages; no superseded manifest may satisfy those comparisons.
+
+No Selena front or transfer has yet been exercised on the clusters.
 
 The current protocol intentionally uses one run seed for the user partition,
 data/window sampling, initialization, and optimization, so seed standard
