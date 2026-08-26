@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-25
+Updated: 2026-08-26
 
 SCHEMA V1 CUTOVER
 - 94 reconstructable completed configurations are archived under
@@ -11,14 +11,15 @@ SCHEMA V1 CUTOVER
 - Their original trees remain under
   archive/outputs/archive/legacy_pre_schema_v1_2026-08-07/ for audit only.
 - Reports now belong under outputs/reports/<family>/<mode>.
-- Active `outputs/` contains only its placeholder; all synchronized historical
-  results were moved to the ignored project archive on 2026-08-25.
+- Active `outputs/` and `logs/` contain only their placeholders. Synchronized
+  historical results were moved to the ignored project archive on 2026-08-25,
+  and the ten historical Slurm log files were removed on 2026-08-26.
 
 LATEST COMPLETED JOB
 Job ID: 42315
 Run/profile: EXPERIMENT_MODE=small sbatch revin.slurm (core family)
 State: completed successfully on 2026-08-05 at 11:09:07 +02:00
-Artifacts synchronized locally: archived locally; no active output payload
+Artifacts synchronized locally: archived locally; no active output/log payload
 Analyzed locally: yes
 Analysis note: All 90/90 configurations and 270/270 seed runs are complete
 under the superseded backbone implementation.

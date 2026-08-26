@@ -4,6 +4,13 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-26: Removed all ten historical tracked Slurm log files from active
+  `logs/` and preserved `logs/.gitkeep`, matching the workspace policy that
+  retired projects alone retain old payloads. Direct inventory confirmed that
+  active `logs/` and `outputs/` now contain only their placeholders. The
+  cluster handoff was updated; no scientific result, analysis, README/LaTeX
+  contract, rerun requirement, or deferred integration work changed.
+
 - 2026-08-17: Simplify `publish_job.sh`: a numeric job ID now selects only its
   exact stdout/stderr pair, while an omitted ID stages the `logs/` and
   lightweight `outputs/` parent trees directly. Publisher, focused contract
