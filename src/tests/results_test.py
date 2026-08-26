@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from experiment_runs import allocate_run, mark_status
-from utils.results import generate_average_summary, generate_results_table
+from pipeline.runs import allocate_run, mark_status
+from results.reporting import generate_average_summary, generate_results_table
 
 
 def write_run(root, dataset, method, means, valid_means):

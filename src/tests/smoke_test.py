@@ -13,9 +13,9 @@ from omegaconf import OmegaConf
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.experiment import run_experiment
-from utils.dataset import AllWindows, TimeSeriesData, load_dataset, split_dataset
-from utils.models import MIN, RevIN
-from utils.results import generate_results_table
+from data.dataset import AllWindows, TimeSeriesData, load_dataset, split_dataset
+from proposal.normalizations import MIN, RevIN
+from results.reporting import generate_results_table
 
 
 def main():

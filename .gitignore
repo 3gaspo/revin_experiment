@@ -1,6 +1,7 @@
 .venv
 .secrets/
 AGENTS.md
+archive/
 __pycache__/
 *.py[cod]
 outputs/*
@@ -17,3 +18,6 @@ datasets/etth1/*
 !datasets/etth1/config.json
 weights/*
 !weights/.gitkeep
+
+# Thesis project local artifacts
+.venv/

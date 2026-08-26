@@ -4,17 +4,6 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
-- 2026-08-17: Harden the shared manifest architecture for future upstream
-  dependencies. Single-run resolution now fails when multiple pipeline
-  configurations remain, accepts exact seed filters, and can bind a downstream
-  computation to an upstream run's declared schema, identity/model
-  configuration, pipeline/experiment parameters, and seeds while keeping paths
-  and manifest IDs as provenance only. Affected files: `src/experiment_runs.py`
-  and its focused contract tests. All 13 manifest tests passed. The 94 current
-  migrated runs have no upstream run dependency and are unaffected, so no
-  artifact migration or scientific rerun is required. Deferred maintenance:
-  document the capability if a future multi-stage producer is introduced.
-
 - 2026-08-17: Simplify `publish_job.sh`: a numeric job ID now selects only its
   exact stdout/stderr pair, while an omitted ID stages the `logs/` and
   lightweight `outputs/` parent trees directly. Publisher, focused contract
@@ -83,3 +72,96 @@ log, and all three rendered guideline pages passed visual inspection. The prior
 aggregation/lifecycle checks were not repeated because those boundaries did not
 change. Live successful/failed launch observations and one real publisher run
 remain the blockers; no scientific rerun is required.
+
+Maintenance 2026-08-18: direct inspection confirmed that the shared manifest
+helper is byte-identical to the canonical schema-1 copies and that the 94
+current migrated runs declare no upstream dependency; the already successful
+13 focused manifest tests therefore close that standalone entry. The README
+was current, and the experiment guideline was corrected to describe exact-log
+job publication and unscoped lightweight-tree publication. Git Bash syntax
+passed for all nine byte-identical publishers. Aggregation/training tests were
+not repeated because those boundaries did not change. Three pdfLaTeX passes
+completed with a clean log, and all three rendered guideline pages passed
+visual inspection. Live successful/failed launch observations and one real
+publisher run remain the blockers; no
+scientific rerun is required.
+
+Maintenance 2026-08-19: direct inspection found no source, configuration,
+new artifact, or cluster-status change; the 94 migrated configurations and
+their documented scope are unchanged. The README and guideline remain current,
+and all nine publisher copies remain byte-identical at SHA-256
+`0A9E87E51517B9F5816BB92CDE726B9E383AB6B8A70DC251FEF429BF7B53B45C`.
+Aggregation/training, lifecycle, Bash-syntax, and PDF checks were not repeated
+because no corresponding boundary changed. Live successful and failed or
+cancelled launch observations plus one real publisher run remain the blockers;
+no scientific rerun is required.
+
+Maintenance 2026-08-20: direct timestamp, source, artifact, and cluster-handoff
+inspection found no change after the previous pass; the 94 migrated
+configurations and their analyzed scope are unchanged. The README and guideline
+remain current, and the publisher remains byte-identical across all nine
+projects at SHA-256
+`0A9E87E51517B9F5816BB92CDE726B9E383AB6B8A70DC251FEF429BF7B53B45C`.
+Aggregation/training, lifecycle, Bash-syntax, and PDF checks were deliberately
+skipped because no corresponding boundary changed. Live successful and failed
+or cancelled launch observations plus one real publisher run remain the
+blockers; no scientific rerun is required.
+
+Maintenance 2026-08-23: direct inspection confirmed the shared nested
+selection and deterministic latest-run behavior, and the helper plus focused
+test file are byte-identical to the other four maintained copies. The
+complementary dependency-free `src/tests/results_test.py` aggregation consumer
+passed in the shared thesis runtime. README selection documentation and the 94
+migrated-run scope remain current; no LaTeX, result claim, migration, or rerun
+changed. The selector entry is resolved, while live lifecycle and publisher
+checks remain pending.
+
+Maintenance 2026-08-24: direct package, import, Slurm, test, migrated-artifact,
+and cluster-handoff inspection confirmed clean proposal/external-model
+boundaries, cohesive owners, and no compatibility paths. As complementary
+scientific coverage, `RevIN` and identity-initialized `MIN` both completed a
+forward/inverse tensor round trip in the shared thesis runtime. README, both
+LaTeX documents, the 94 migrated-run scope, and rerun requirements are
+unchanged, so the reorganization and guidance entries are resolved. The direct
+training smoke remains deliberately skipped because the documented runtime
+lacks OmegaConf; live lifecycle and publisher checks remain pending.
+
+## 2026-08-24 — Pinned PatchTST and DLinear source packages
+
+- Behavior and affected contracts: replaced the divergent flat external-model
+  files with byte-identical pinned PatchTST and DLinear source-adapted packages
+  and one common lags, dim, horizon tensor boundary.
+- Focused checks and outcomes: Python compilation, external-package layout and
+  revision guards, and direct multivariate PatchTST/DLinear forwards passed.
+  The full smoke was not runnable because OmegaConf is absent from the shared
+  runtime; no dependency was installed.
+- Deferred integration: execute the focused experiment smoke in the prepared
+  project environment and compare fresh cluster outputs before reuse.
+- README/LaTeX and reruns: README and local guidance document exact provenance.
+  The 94 migrated configurations were produced by the superseded model code and
+  must not be treated as current-contract comparisons; rerun every affected
+  DLinear/PatchTST configuration and reconcile the guideline and executive
+  summary during maintenance.
+
+Maintenance 2026-08-25: direct source-package, selector, workflow, manifest,
+artifact, README, guideline, summary, and handoff inspection confirmed that all
+94 schema-1 manifests are complete but scientifically superseded by the pinned
+PatchTST/DLinear packages. The complementary
+`src/tests/test_slurm_workflow.py` check passed (4 tests), covering current
+launcher selection and recovery without repeating the recorded model forwards.
+The direct experiment smoke remains inapplicable because the documented runtime
+lacks OmegaConf. README and cluster instructions now require
+`RUN_CONFLICT_POLICY=new`; the guideline and executive summary explicitly scope
+the old numbers as historical evidence. Two pdfLaTeX passes per document
+produced clean three- and two-page PDFs, and every page passed visual
+inspection. Current-package test and full reruns, followed by new artifact
+analysis, remain required; live lifecycle and publisher checks also remain
+pending.
+
+Maintenance 2026-08-26: direct assertion, workflow-stage, ignore-rule, README,
+LaTeX, archived-evidence, and handoff inspection confirmed that the change is
+test/housekeeping-only. Dependency-light compilation of
+`src/tests/test_slurm_workflow.py` passed and `.venv/` is ignored; the focused
+workflow and workspace-wide Bash checks were not repeated. The entry is
+resolved. Current-package cluster reruns, new artifact analysis, lifecycle
+observations, and publisher validation remain pending.

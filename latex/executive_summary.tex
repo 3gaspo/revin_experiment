@@ -12,7 +12,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\scriptsize\color{navy}\textbf{Reversible instance normalization}}
-\rhead{\scriptsize\color{gray}Archived results through 7 August 2026}
+\rhead{\scriptsize\color{gray}Superseded evidence reviewed 25 August 2026}
 \cfoot{\scriptsize\color{gray}\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
 \setlength{\headheight}{13pt}
@@ -26,15 +26,15 @@
 
 \begin{document}
 {\huge\bfseries\color{navy}Reversible instance normalization}\par
-{\Large\color{blue}Executive summary of obtained results}\par
+{\Large\color{blue}Executive summary of superseded evidence}\par
 \vspace{5pt}
 
-\callout{\textbf{Decision.} Across the corrected 15-setting core grid,
-instance normalization is strongly beneficial relative to global standard
-normalization. The affine RevIN layer changes results by less than 0.1\% at the
-median, while normalized-loss training helps mainly on Test1 and is mixed on
-Test2. Tables~\ref{tab:aggregate} and~\ref{tab:ablations} contain the complete
-quantitative support for these conclusions.}
+\callout{\textbf{Current decision.} Do not use the 94 migrated configurations
+as current-model evidence. They were produced by the superseded flat
+PatchTST implementation, before the pinned source-adapted package became the
+sole current backbone. Tables~\ref{tab:aggregate} and~\ref{tab:ablations}
+preserve the previously analyzed signal, but every affected comparison must be
+rerun before it supports a current conclusion.}
 
 \sectionbar{Evidence completeness}
 \begin{table}[h]
@@ -47,10 +47,11 @@ quantitative support for these conclusions.}
 Traffic, Electricity, Solar; PatchTST & 3 & 5 & 6 & 3 & 270 / 270 \\
 \bottomrule
 \end{tabularx}
-\caption{The 90 method configurations have non-empty metrics, dataset
+\caption{The 90 historical method configurations have non-empty metrics, dataset
 configuration, completion signature, and criterion plot for all three seeds.
 The 94 schema-1 manifests consist of these 90 configurations plus four isolated
-test configurations.}
+test configurations. Schema validity does not make their superseded model
+implementation scientifically reusable.}
 \end{table}
 
 \sectionbar{Aggregate normalization result}
@@ -135,13 +136,15 @@ Report total run uncertainty & The representative three-seed spread is
 \end{tabularx}
 
 \vspace{6pt}
-\callout{\textbf{Historical boundary.} These are results of the corrected
-current protocol, not a resubmission or numerical reproduction of the rejected
-ECML/AALTD paper. The original submission remains read-only guidance in the
-workspace-level \code{latex/submissions} directory.}
+\callout{\textbf{Historical boundary.} These values remain an analyzed record
+of the pre-package corrected protocol, not evidence from the current pinned
+PatchTST/DLinear implementation and not a numerical reproduction of the
+rejected ECML/AALTD paper. The original submission remains read-only guidance
+in the workspace-level \code{latex/submissions} directory.}
 
 \vfill
-{\scriptsize\color{gray}Source: archived small-core result JSONs and generated
+{\scriptsize\color{gray}Source: historical small-core result JSONs and generated
 summary tables, migrated without numerical change into 94 schema-1 manifests.
-Gains are relative per-setting improvements before equal-weight averaging.}
+The manifests predate the current pinned backbone packages. Gains are relative
+per-setting improvements before equal-weight averaging.}
 \end{document}

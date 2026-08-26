@@ -1,1 +1,0 @@
-v3|family=core|mode=test|datasets=electricity|settings=504:168|models=patchtst|methods=standard_mse instance_mse instance_nmse min_nmse|seeds=1|summary_methods=standard_mse instance_mse instance_nmse min_nmse|oracle_methods=standard_mse instance_mse instance_nmse min_nmse|baseline=standard_mse|strict=true

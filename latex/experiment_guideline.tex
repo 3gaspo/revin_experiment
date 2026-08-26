@@ -14,7 +14,7 @@
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 \title{\textbf{Reversible Instance Normalization Experiments}\\Experiment Guideline}
 \author{Thesis project}
-\date{7 August 2026}
+\date{25 August 2026}
 \begin{document}
 \maketitle
 
@@ -76,6 +76,21 @@ MSE:
 Only gradient weighting changes; predictions are denormalized and final tables
 report original-space MSE. Pairwise comparisons hold seed, model, optimizer,
 batching, and budget fixed.
+
+\section{Model implementation and provenance}
+The normalization mechanisms are implemented only in
+\code{src/proposal/normalizations.py}. Dataset windows, model composition,
+ordinary fitting, manifests, summaries, and plots remain respectively in
+\code{data}, \code{model_loading}, \code{training}, \code{pipeline},
+\code{results}, and \code{visualization}.
+
+PatchTST is source-adapted from \code{yuqinie98/PatchTST} revision
+\code{204c21efe0b39603ad6e2ca640ef5896646ab1a9}; DLinear is source-adapted
+from \code{cure-lab/LTSF-Linear} revision
+\code{0c113668a3b88c4c4ee586b8c5ec3e539c4de5a6}. Their isolated
+\code{external_models} packages use the common \code{lags, dim, horizon}
+boundary and are byte-identical to TimeTensors. Normalization remains outside
+both borrowed architectures.
 
 \section{Centering and transform ablations}
 Two appendix variants use non-affine instance normalization:
@@ -155,17 +170,20 @@ terminal state, including failure, cancellation, or timeout, the user runs
 \code{bash publish_job.sh <job-id>} from the project root. The script verifies
 \code{main}, sources \path{$HOME/codes/proxy.sh} (or
 \code{PROXY_SCRIPT_PATH}), and fast-forward pulls \code{origin/main} before
-artifact selection or staging. It then commits only that job's exact
-stdout/stderr pair and launch-tagged run/report roots, excluding \code{*.pt},
-\code{*.npy}, and \code{*.cbm}, and pushes \code{origin/main} without opening a
-pull request. Omitting the job ID publishes all logs and lightweight outputs; a
+artifact selection or staging. With a job ID, it commits only that job's exact
+stdout/stderr pair. Omitting the job ID publishes all logs and lightweight
+outputs, excluding \code{*.pt}, \code{*.npy}, and \code{*.cbm}. It then pushes
+\code{origin/main} without opening a pull request. A
 non-fast-forward pull stops without a merge commit, and unrelated staged paths
 remain outside the publisher commit.
 
-Ninety-four reconstructable historical configurations were migrated. Their
-source trees remain under
-\path{outputs/archive/legacy_pre_schema_v1_2026-08-07}; current readers exclude
-that archive.
+Ninety-four reconstructable configurations were migrated from the earlier
+flat-backbone implementation. Their source trees remain under
+\path{outputs/archive/legacy_pre_schema_v1_2026-08-07}, but the migrated
+\path{outputs/core} manifests also predate the pinned source packages above.
+They are retained only as analyzed historical evidence and are not eligible
+for current model comparisons. Reproduction must allocate new runs for every
+affected PatchTST or DLinear configuration before current tables are used.
 
 Tables report mean and seed standard deviation, explicit row multipliers,
 validation-selected policies, and a clearly labeled optimistic test oracle.
@@ -174,6 +192,8 @@ fields, project-scoped overrides, explicit-run precedence, and additive
 \code{drop_users}.
 
 \section{Practical validation}
-Run result-format and Slurm workflow tests locally. Training is a remote cluster
-task; resubmit the same mode to continue from signature-matched seed outputs.
+Run external-package forwards, result-format checks, and Slurm workflow tests
+locally. Training is a remote cluster task. The first current-package
+submission must use a new-run policy so the superseded completed manifests are
+not selected as reusable computations.
 \end{document}

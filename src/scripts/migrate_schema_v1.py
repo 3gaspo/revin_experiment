@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from experiment_runs import _atomic_json, allocate_run, identity_path, load_manifest, mark_status
+from pipeline.runs import _atomic_json, allocate_run, identity_path, load_manifest, mark_status
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

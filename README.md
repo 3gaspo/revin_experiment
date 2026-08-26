@@ -8,16 +8,27 @@ is included as the non-personalized asymmetric-output precursor to cmIN.
 Cluster personalization and data-dependent cmIN initialization remain future
 work.
 
+The pinned source-adapted PatchTST and DLinear packages are now the sole
+current backbones. The 94 migrated configurations were produced by the
+superseded flat implementations; their metrics remain historical evidence but
+must not be reused as current-model comparisons.
+
 ## Layout
 
 ```text
 src/
   conf/config.yaml
-  models/                 DLinear and PatchTST
-  scripts/experiment.py   train/evaluate one configuration (or a seed list)
+  data/                   dataset loading, splits, and windows
+  external_models/        pinned source-adapted DLinear and PatchTST packages
+  model_loading/          shared wrapper and model factory
+  proposal/               RevIN/MIN normalization mechanisms
+  training/               ordinary fitting and evaluation
+  pipeline/               run identity and manifest orchestration
+  results/                table and summary generation
+  visualization/          training and prediction plots
+  scripts/                Hydra and migration entry points
   slurm/run_*.sh          complete workflow orchestration
   slurm/stage_*.sh        separate training and table stages
-  utils/                  data, normalization, losses, training, plots, tables
   tests/                  lightweight checks
 latex/experiment_guideline.tex  current protocol and practical specification
 latex/executive_summary.tex     analyzed current results
@@ -30,6 +41,17 @@ nmse.slurm                no/standard normalization under nMSE
 exotic.slurm              component and transform ablations
 min.slurm                 global MIN under MSE and nMSE
 ```
+
+## External model provenance
+
+`external_models/patchtst/` is source-adapted from
+`yuqinie98/PatchTST` revision
+`204c21efe0b39603ad6e2ca640ef5896646ab1a9`; unrelated pretraining and its
+internal RevIN path are omitted because normalization is this experiment's
+separate proposal. `external_models/dlinear/` is source-adapted from
+`cure-lab/LTSF-Linear` revision
+`0c113668a3b88c4c4ee586b8c5ec3e539c4de5a6`; only the local tensor boundary
+differs. Both packages are byte-identical to TimeTensors.
 
 Each dataset is read from `datasets/<name>/<name>.csv`; the first column is the
 date index and the remaining columns are user series. Dates are split
@@ -245,15 +267,21 @@ are explicit alternatives. Tables support
 `TABLE_CONFIG_POLICY=distinct|latest|average` and
 `TABLE_REPEAT_POLICY=selected|latest|distinct|average`, plus explicit
 `TABLE_PIPELINE_CONFIGS`. Explicit filters select pipeline configurations and
-must match even with one run. `SELECTED_RUNS.txt` records only the automatic or
+must match even with one run. Nested pipeline and experiment fields, including
+embedded upstream scientific dependencies, use dotted filter keys and
+participate in distinct labels. `SELECTED_RUNS.txt` records only the automatic or
 pinned exact repeat per pipeline signature. Report manifests record requested
 filters and obtained inputs.
 
 The former output roots were migrated only where all identity and artifact
-evidence was available. Ninety-four completed configurations now use this
-schema. Their original trees remain under
-`outputs/archive/legacy_pre_schema_v1_2026-08-07/` for audit and are never read
-by current tables.
+evidence was available. Ninety-four completed configurations use schema 1, and
+their original trees remain under
+`outputs/archive/legacy_pre_schema_v1_2026-08-07/` for audit. Those migrated
+`outputs/core` manifests predate the pinned external-model packages. Schema
+validity does not make them scientifically equivalent to the current code, so
+they are ineligible for current comparisons. Reproduce affected configurations
+with `RUN_CONFLICT_POLICY=new`; the newly completed repeat then becomes the
+selected current input.
 
 ## Publishing terminal Slurm artifacts
 
@@ -321,7 +349,7 @@ elsewhere. The active models do not read pretrained weights.
 - `src/scripts/experiment.py` is the Hydra training/evaluation entry point. It
   expands `seeds`, writes one isolated directory per seed, and timestamps the
   training and validation messages.
-- `src/utils/results.py` validates completed seed outputs and creates LaTeX and
+- `src/results/reporting.py` validates completed seed outputs and creates LaTeX and
   JSON summaries. It is normally called by the table stage rather than directly.
 
 Timestamped progress, validation, evaluation, table messages, and Python
@@ -329,6 +357,12 @@ warnings are written to the Slurm `.out` file. The `.err` file is reserved for
 scheduler, shell, or Python failures.
 
 ## Result interpretation
+
+The numerical summaries below are meaningful only for newly completed runs
+using the pinned external packages. The previously analyzed 94 migrated
+configurations are preserved in the executive summary with an explicit
+superseded-evidence boundary and require complete DLinear/PatchTST reruns before
+supporting a current conclusion.
 
 For every family, model, and test split, the table stage writes
 `outputs/reports/<family>/<mode>/results_<model>_<split>_mse.tex` with seed mean $\pm$ sample

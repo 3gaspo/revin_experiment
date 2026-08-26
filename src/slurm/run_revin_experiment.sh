@@ -124,8 +124,8 @@ revin_on_exit() {
   local status=$?
   trap - EXIT
   if [ "$status" -ne 0 ]; then
-    python -m experiment_runs interrupt-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
-    elif python -m experiment_runs complete-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
+    python -m pipeline.runs interrupt-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
+    elif python -m pipeline.runs complete-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
       :
     else
       status=$?
@@ -253,13 +253,13 @@ run_training() {
           for seed in "${SEED_LIST[@]}"; do allocation_args+=(--seed "$seed"); done
           if [ -f "$dataset_config" ]; then allocation_args+=(--input "dataset_config=$dataset_config"); fi
           if [ -n "${RUN_INDEX:-}" ]; then allocation_args+=(--run-index "$RUN_INDEX"); fi
-          IFS=$'\t' read -r run_dir run_action run_signature < <(python -m experiment_runs allocate "${allocation_args[@]}")
+          IFS=$'\t' read -r run_dir run_action run_signature < <(python -m pipeline.runs allocate "${allocation_args[@]}")
           if [ "$run_action" = skip ]; then
             log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method run=$run_dir"
           else
-            run_seeds_csv="$(python -m experiment_runs pending-seeds --run-dir "$run_dir")"
+            run_seeds_csv="$(python -m pipeline.runs pending-seeds --run-dir "$run_dir")"
             IFS=, read -ra pending <<< "$run_seeds_csv"
-            for seed in "${pending[@]}"; do python -m experiment_runs status --run-dir "$run_dir" --status running --seed "$seed"; done
+            for seed in "${pending[@]}"; do python -m pipeline.runs status --run-dir "$run_dir" --status running --seed "$seed"; done
             printf '\n%s configuration=%s dataset=%s lags=%s horizon=%s model=%s normalization=%s loss=%s requested_seeds=%s run_seeds=%s run=%s computation_signature=%s batch_size=%s learning_rate=%s epochs=%s steps=%s eval_stride=%s valid_eval_frequency=%s logging_frequency=%s overrides=%s\n' \
               "$(date -Is)" "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS" "$dataset" "$L" "$H" "$model" "$normalization" "$loss" \
               "$SEEDS_CSV" "$run_seeds_csv" "$run_dir" "$run_signature" "$BATCH_SIZE" "$LEARNING_RATE" "$EPOCHS" "$STEPS" "$stride" "$VALID_EVAL_FREQ" "$LOGGING_EVAL_FREQ" "${ARGS[*]}"
@@ -281,14 +281,14 @@ run_training() {
                 log_error "training completed without required results in $run_dir/seed_$seed"
                 exit 1
               fi
-              python -m experiment_runs status --run-dir "$run_dir" --status ready --seed "$seed" \
+              python -m pipeline.runs status --run-dir "$run_dir" --status ready --seed "$seed" \
                 --artifact "seed_$seed/results.json" --artifact "seed_$seed/config.yaml" --artifact "seed_$seed/dataset_config.json"
             done
             for seed in "${SEED_LIST[@]}"; do
               required_artifacts+=(--artifact "seed_$seed/results.json" --artifact "seed_$seed/config.yaml" --artifact "seed_$seed/dataset_config.json")
             done
-            python -m experiment_runs ready --run-dir "$run_dir" "${required_artifacts[@]}"
-            python -m experiment_runs complete --run-dir "$run_dir" --launch-id "$EXPERIMENT_LAUNCH_ID"
+            python -m pipeline.runs ready --run-dir "$run_dir" "${required_artifacts[@]}"
+            python -m pipeline.runs complete --run-dir "$run_dir" --launch-id "$EXPERIMENT_LAUNCH_ID"
           fi
           configuration_index=$((configuration_index + 1))
         done
@@ -367,7 +367,7 @@ run_tables() {
       fi
       printf '\n%s table family=%s model=%s split=%s metric=mse output=%s\n' \
         "$(date -Is)" "$EXPERIMENT_FAMILY" "$model" "$split" "$output"
-      srun --ntasks=1 python -m utils.results "${result_args[@]}"
+      srun --ntasks=1 python -m scripts.report "${result_args[@]}"
     done
   done
 }

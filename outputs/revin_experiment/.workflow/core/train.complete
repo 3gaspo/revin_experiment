@@ -1,1 +1,0 @@
-v2|family=core|mode=small|datasets=traffic electricity solar|settings=168:24 336:48 504:168 336:96 336:720|models=patchtst|methods=none_mse standard_mse instance_mse instance_nmse revin_mse revin_nmse|seeds=1 2 3|epochs=10000|steps=10000|batch_size=256|learning_rate=1e-5|eval_stride=horizon|valid_eval_freq=1000|logging_eval_freq=1000

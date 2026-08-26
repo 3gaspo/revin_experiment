@@ -36,6 +36,10 @@ class SlurmWorkflowTest(unittest.TestCase):
         self.assertNotIn("full|large", self.runner)
         for mode in ("test)", "small)", "full)", "ultra)"):
             self.assertIn(mode, self.runner)
+        self.assertIn(
+            "srun --ntasks=1 python -m scripts.experiment", self.runner
+        )
+        self.assertIn("srun --ntasks=1 python -m scripts.report", self.runner)
         self.assertTrue((ROOT / "src/slurm/stage_train.sh").is_file())
         self.assertNotIn(
             "tables.complete", (ROOT / "src/slurm/stage_tables.sh").read_text()
@@ -75,13 +79,13 @@ class SlurmWorkflowTest(unittest.TestCase):
 
     def test_manifest_contract_reuses_matching_paths_across_modes(self):
         self.assertNotIn("run.complete", self.runner)
-        self.assertIn("python -m experiment_runs allocate", self.runner)
-        self.assertIn("python -m experiment_runs pending-seeds", self.runner)
-        self.assertIn("python -m experiment_runs status", self.runner)
+        self.assertIn("python -m pipeline.runs allocate", self.runner)
+        self.assertIn("python -m pipeline.runs pending-seeds", self.runner)
+        self.assertIn("python -m pipeline.runs status", self.runner)
         self.assertIn("--status ready", self.runner)
-        self.assertIn("python -m experiment_runs ready", self.runner)
-        self.assertIn("python -m experiment_runs complete-launch", self.runner)
-        self.assertIn("python -m experiment_runs complete --run-dir", self.runner)
+        self.assertIn("python -m pipeline.runs ready", self.runner)
+        self.assertIn("python -m pipeline.runs complete-launch", self.runner)
+        self.assertIn("python -m pipeline.runs complete --run-dir", self.runner)
         self.assertNotIn("--status completed", self.runner)
         self.assertIn('--input "dataset_config=$dataset_config"', self.runner)
         self.assertIn('--mode "$EXPERIMENT_MODE"', self.runner)

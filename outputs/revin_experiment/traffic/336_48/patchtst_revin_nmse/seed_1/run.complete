@@ -1,1 +1,0 @@
-v2|dataset=traffic|lags=336|horizon=48|model=patchtst|method=revin_nmse|epochs=10000|steps=10000|batch_size=256|learning_rate=1e-5|eval_stride=48|valid_eval_freq=1000|logging_eval_freq=1000|dataset_config_sha256=ee8c13016c4861d47962711a545c90916dcca2ed177cc4d72090bcae06bc6709|seed=1

@@ -10,10 +10,10 @@ import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
 
-from utils.dataset import build_loaders
-from utils.models import build_model
-from utils.pipeline import TorchLearner, make_losses
-from utils.plots import plot_history
+from data.dataset import build_loaders
+from model_loading.forecast import build_model
+from training.pipeline import TorchLearner, make_losses
+from visualization.training import plot_history
 
 
 def summarize(losses):
