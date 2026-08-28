@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-26
+Updated: 2026-08-28
 
 SCHEMA V1 CUTOVER
 - 94 reconstructable completed configurations are archived under
@@ -34,7 +34,8 @@ Electricity result and affine-layer redundancy, but not Traffic's preference
 for standard normalization or uniformly better normalized backpropagation.
 
 CURRENT OR NEXT CLUSTER JOBS
-No RevIN job is currently running.
+No RevIN job is currently running or queued; the user reconfirmed the empty
+scheduler state on 2026-08-28.
 
 1. Run `RUN_CONFLICT_POLICY=new EXPERIMENT_MODE=test sbatch revin.slurm` and
    inspect all four new current-package smoke configurations.
@@ -45,7 +46,8 @@ No RevIN job is currently running.
 4. Run the remaining nMSE, exotic, MIN, and DLinear families only under the
    pinned packages; no superseded manifest may satisfy those comparisons.
 
-No Selena front or transfer has yet been exercised on the clusters.
+No Selena experiment job or result transfer is recorded. Code-deployment
+state was not independently inspected in this handoff.
 Result synchronization must run on DGX as an inbound Selena pull. An unscoped
 publisher run includes the paired Selena artifact trees under the standard
 lightweight exclusions.
