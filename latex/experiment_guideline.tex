@@ -174,9 +174,11 @@ terminal state, including failure, cancellation, or timeout, the user runs
 \code{bash publish_job.sh <job-id>} from the project root. The script verifies
 \code{main}, sources \path{$HOME/codes/proxy.sh} (or
 \code{PROXY_SCRIPT_PATH}), and fast-forward pulls \code{origin/main} before
-artifact selection or staging. With a job ID, it commits only that job's exact
-stdout/stderr pair. Omitting the job ID publishes all logs and lightweight
-outputs, excluding \code{*.pt}, \code{*.npy}, and \code{*.cbm}. It then pushes
+artifact selection or staging. Lightweight publication selects the exact
+local or Selena stdout/stderr pair when a job ID is supplied, all log trees
+otherwise, and only aggregate \path{outputs*/reports/} artifacts. Detailed
+publication adds all non-binary outputs and diagnostics. Both tiers exclude
+\code{*.pt}, \code{*.npy}, and \code{*.cbm}. The script then pushes
 \code{origin/main} without opening a pull request. A
 non-fast-forward pull stops without a merge commit, and unrelated staged paths
 remain outside the publisher commit.
@@ -192,8 +194,9 @@ affected PatchTST or DLinear configuration before current tables are used.
 Tables report mean and seed standard deviation, explicit row multipliers,
 validation-selected policies, and a clearly labeled optimistic test oracle.
 The oracle is diagnostic only. Dataset configuration uses shared top-level
-fields, project-scoped overrides, explicit-run precedence, and additive
-\code{drop_users}.
+fields and project-scoped overrides. For \code{drop_users}, null inherits, an
+empty list retains every CSV user, and a nonempty run value replaces the
+configured default.
 
 \section{Practical validation}
 Run external-package forwards, result-format checks, and Slurm workflow tests

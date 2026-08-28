@@ -68,10 +68,6 @@ def _drop_user_list(value: Any) -> list[int]:
     return [int(item) for item in values]
 
 
-def _merge_drop_users(*values: Any) -> list[int]:
-    return list(dict.fromkeys(item for value in values for item in _drop_user_list(value)))
-
-
 def _column_names(value: Any) -> list[str] | None:
     if value is None or value == "":
         return None
@@ -121,9 +117,8 @@ def _load_dataset_config(
     if scoped is not None:
         if not isinstance(scoped, Mapping):
             raise ValueError("dataset config field 'revin' must be an object")
-        options["drop_users"] = _merge_drop_users(
-            options.get("drop_users"), scoped.get("drop_users")
-        )
+        if scoped.get("drop_users") is not None:
+            options["drop_users"] = _drop_user_list(scoped.get("drop_users"))
         if scoped.get("target_cols") is not None:
             options["target_cols"] = _column_names(scoped.get("target_cols"))
         for key in ("date_col", "aggr", "aggr_period"):
@@ -169,7 +164,7 @@ def load_dataset(
         frame = frame.dropna(axis=0, how="any")
     configured_drops = _drop_user_list(config.get("drop_users"))
     run_drops = _drop_user_list(drop_users)
-    applied_drops = _merge_drop_users(configured_drops, run_drops)
+    applied_drops = run_drops if drop_users is not None else configured_drops
     configured_targets = _column_names(config.get("target_cols"))
     run_targets = _column_names(target_cols)
     applied_targets = run_targets if run_targets is not None else configured_targets

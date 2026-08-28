@@ -28,13 +28,20 @@ class SlurmWorkflowTest(unittest.TestCase):
             self.assertIn(f"--exclude='{excluded}'", code)
         self.assertIn("selena.hpc.edf.fr", code)
         self.assertIn("--delete", code)
-        self.assertIn("dgx-front.retd.edf.fr", results)
+        self.assertNotIn("dgx-front.retd.edf.fr", results)
+        self.assertIn(
+            'SOURCE_ROOT="$nni@selena.hpc.edf.fr:~/codes/$PROJECT_NAME"',
+            results,
+        )
+        self.assertIn('DESTINATION_ROOT="$PROJECT_ROOT"', results)
+        self.assertIn('mkdir -p "$DESTINATION_ROOT/outputs_selena"', results)
         self.assertIn("--include='outputs_selena/.gitkeep'", code)
         self.assertIn("--exclude='outputs_selena/***'", code)
         self.assertIn("--include='logs_selena/.gitkeep'", code)
         self.assertIn("--exclude='logs_selena/***'", code)
         self.assertIn('"$SOURCE_ROOT/outputs_selena/"', results)
         self.assertIn('"$SOURCE_ROOT/logs_selena/"', results)
+        self.assertIn("pulled from Selena to DGX", results)
         self.assertNotIn("--delete", results)
 
     def setUp(self):
@@ -65,9 +72,10 @@ class SlurmWorkflowTest(unittest.TestCase):
             self.assertIn(f"EXPERIMENT_FAMILY={family}", selena)
             self.assertIn(f'EXPERIMENT_MODE="${{EXPERIMENT_MODE:-{default_mode}}}"', selena)
             self.assertIn("#SBATCH --partition=an", selena)
+            self.assertIn("#SBATCH --qos=an_preemptable", selena)
             self.assertIn("#SBATCH --output=logs_selena/%x_%j.out", selena)
             self.assertIn("#SBATCH --exclusive", selena)
-            self.assertIn("#SBATCH --no-requeue", selena)
+            self.assertNotIn("#SBATCH --no-requeue", selena)
             self.assertIn("#SBATCH --wckey=P12CU:DATASCIENCE", selena)
             self.assertIn('OUTPUTS_ROOT="$PROJECT_ROOT/outputs_selena"', selena)
             self.assertIn('LOGS_ROOT="$PROJECT_ROOT/logs_selena"', selena)

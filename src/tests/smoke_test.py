@@ -197,7 +197,7 @@ def main():
         assert len(history["train"]) == 1
         metadata = json.loads((run / "dataset_config.json").read_text(encoding="utf-8"))
         assert metadata["window_anchor"] == "query_t"
-        assert metadata["drop_users_applied"] == [0, 1, 2]
+        assert metadata["drop_users_applied"] == [2]
         assert metadata["target_cols_applied"] == ["d", "e"]
         assert metadata["retained_users"] == 2
         table = generate_results_table(

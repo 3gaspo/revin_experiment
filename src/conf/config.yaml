@@ -12,9 +12,9 @@ hydra:
 data:
   root: datasets
   name: electricity
-  # A sibling config.json is loaded automatically. These are additive run-only exclusions.
+  # null inherits config.json; [] explicitly keeps every source user.
   config_path: null
-  drop_users: []
+  drop_users: null
   target_cols: null
   date_col: null
   aggr: null

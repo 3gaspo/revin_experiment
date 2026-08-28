@@ -1,0 +1,66 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,microtype}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+\definecolor{navy}{HTML}{17365D}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\title{\color{navy}Reversible and Modulated Instance Normalization\\[3pt]\large Problem formulation and proposed normalization family}
+\author{Thesis project}
+\date{Standalone method note}
+\begin{document}
+\maketitle
+\begin{abstract}
+This note isolates the scientific formulation from implementation and cluster
+operations. It is intended to be readable on its own and reusable when drafting
+a paper introduction or method section.
+\end{abstract}
+
+\section{Forecasting task}
+For an input window $X\in\R^{C\times L}$ and target
+$Y\in\R^{C\times H}$, a backbone $f_\theta$ predicts the future. The study
+isolates transformations applied around the same backbone and optimization
+budget.
+
+\section{Reversible instance normalization}
+For each sample and channel, compute location $\mu(X)$ and positive scale
+$\sigma(X)$. RevIN transforms
+\[
+ Z=\gamma\odot\frac{X-\mu(X)}{\sigma(X)}+\nu,
+ \qquad \widetilde Y=f_\theta(Z),
+\]
+then returns
+\[
+ \widehat Y=\sigma(X)\odot
+ \frac{\widetilde Y-\nu}{\gamma}+\mu(X).
+\]
+Location may be mean, last value, median, or zero; scale may be standard
+deviation, median absolute deviation, or one. Affine parameters are optional.
+
+\section{Modulated instance normalization}
+MIN retains the RevIN input transform but learns an independent global output
+mapping:
+\[
+ \widehat Y=\sigma(X)\odot
+ \left[\alpha\odot\frac{f_\theta(Z)-\nu}{\gamma}+\beta\right]
+ +\mu(X).
+\]
+The per-channel parameters $(\gamma,\nu,\alpha,\beta)$ start at the
+identity. Unlike a personalized method, they do not depend on user or cluster.
+
+\section{Experimental decomposition}
+The core family separates no normalization, global standardization,
+non-affine instance normalization, and affine RevIN. Separate fronts isolate
+normalized loss, centering/scaling components, robust and nonlinear
+transformations, and MIN. DLinear and PatchTST remain unchanged external
+backbones.
+
+\section{Evidence required}
+A valid comparison fixes target splits, query rows, optimizer steps, batch
+size, initialization distribution, and seeds. Reports distinguish aggregate,
+equal-user, unseen-user, and worst-user behavior so that a global gain cannot
+hide population regressions.
+\end{document}
