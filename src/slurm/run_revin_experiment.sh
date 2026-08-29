@@ -123,15 +123,50 @@ TABLE_REPEAT_POLICY="${TABLE_REPEAT_POLICY:-selected}"
 if [ "$EXPERIMENT_MODE" = test ]; then TABLE_PURPOSE="${TABLE_PURPOSE:-smoke}"; else TABLE_PURPOSE="${TABLE_PURPOSE:-publication}"; fi
 EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
 export EXPERIMENT_LAUNCH_ID
+ACTIVE_STAGE=""
+ACTIVE_TASK=""
+
+stage_start() {
+  ACTIVE_STAGE="$1"
+  log_section "stage $ACTIVE_STAGE started"
+}
+
+stage_complete() {
+  log_section "stage $ACTIVE_STAGE completed status=success"
+  ACTIVE_STAGE=""
+}
+
+task_start() {
+  ACTIVE_TASK="$*"
+  log "task $ACTIVE_TASK started"
+}
+
+task_complete() {
+  local status="$1"
+  log "task $ACTIVE_TASK completed status=$status"
+  ACTIVE_TASK=""
+}
+
 revin_on_exit() {
   local status=$?
   trap - EXIT
+  if [ -n "$ACTIVE_TASK" ]; then
+    log_error "task $ACTIVE_TASK completed status=failed exit_code=$status"
+  fi
+  if [ -n "$ACTIVE_STAGE" ]; then
+    log_error "stage $ACTIVE_STAGE completed status=failed exit_code=$status"
+  fi
   if [ "$status" -ne 0 ]; then
     python -m pipeline.runs interrupt-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
-    elif python -m pipeline.runs complete-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
-      :
-    else
-      status=$?
+  elif python -m pipeline.runs complete-launch --root "$OUT_ROOT" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
+    :
+  else
+    status=$?
+  fi
+  if [ "$status" -eq 0 ]; then
+    log_section "workflow completed status=success exit_code=0"
+  else
+    log_error "workflow completed status=failed exit_code=$status"
   fi
   exit "$status"
 }
@@ -237,6 +272,7 @@ run_training() {
           method_args "$method"
           loss="${method##*_}"
           normalization="${method%_$loss}"
+          task_start "$((configuration_index + 1))/$TOTAL_CONFIGURATIONS configuration dataset=$dataset setting=$setting model=$model method=$method"
           identity_root="$OUT_ROOT/$dataset/${L}_${H}/${model,,}/${normalization,,}/${loss,,}"
           if [ "$EXPERIMENT_MODE" = test ]; then purpose=smoke; else purpose=publication; fi
           allocation_args=(
@@ -253,12 +289,16 @@ run_training() {
             --policy "$RUN_CONFLICT_POLICY" --skip-completed "$SKIP_COMPLETED" --force "$FORCE_RUN"
             --launch-id "$EXPERIMENT_LAUNCH_ID"
           )
+          if [ "${dataset,,}" = weather ]; then
+            allocation_args+=(--pipeline-config "data.missing_values=zero")
+          fi
           for seed in "${SEED_LIST[@]}"; do allocation_args+=(--seed "$seed"); done
           if [ -f "$dataset_config" ]; then allocation_args+=(--input "dataset_config=$dataset_config"); fi
           if [ -n "${RUN_INDEX:-}" ]; then allocation_args+=(--run-index "$RUN_INDEX"); fi
           IFS=$'\t' read -r run_dir run_action run_signature < <(python -m pipeline.runs allocate "${allocation_args[@]}")
           if [ "$run_action" = skip ]; then
             log "skip complete dataset=$dataset lags=$L horizon=$H model=$model method=$method run=$run_dir"
+            task_complete skipped
           else
             run_seeds_csv="$(python -m pipeline.runs pending-seeds --run-dir "$run_dir")"
             IFS=, read -ra pending <<< "$run_seeds_csv"
@@ -292,6 +332,7 @@ run_training() {
             done
             python -m pipeline.runs ready --run-dir "$run_dir" "${required_artifacts[@]}"
             python -m pipeline.runs complete --run-dir "$run_dir" --launch-id "$EXPERIMENT_LAUNCH_ID"
+            task_complete success
           fi
           configuration_index=$((configuration_index + 1))
         done
@@ -312,6 +353,8 @@ contains_method() {
 run_tables() {
   local dataset_arg setting_arg method_arg summary_arg oracle_arg model split suffix pair
   local output summary_baseline
+  local current=0
+  local total=$((${#MODEL_LIST[@]} * 2))
   local -a setting_dirs table_methods summary_methods oracle_methods result_args
   setting_dirs=()
   for setting in "${SETTING_LIST[@]}"; do
@@ -370,7 +413,10 @@ run_tables() {
       fi
       printf '\n%s table family=%s model=%s split=%s metric=mse output=%s\n' \
         "$(date -Is)" "$EXPERIMENT_FAMILY" "$model" "$split" "$output"
+      current=$((current + 1))
+      task_start "$current/$total table model=$model split=$split metric=mse"
       srun --ntasks=1 python -m scripts.report "${result_args[@]}"
+      task_complete success
     done
   done
 }

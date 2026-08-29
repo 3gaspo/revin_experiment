@@ -286,3 +286,16 @@ observations, and publisher validation remain pending.
   default; re-render the guideline during maintenance. This transfer-only
   change adds no scientific rerun beyond the already-required current-package
   reruns.
+
+## 2026-08-29 — Terminal Slurm completion records
+
+- Behavior and affected contracts: every RevIN configuration and report
+  subtask, both workflow stages, and the final exit trap now emit explicit
+  terminal states on success, skip, or failure after manifest finalization.
+- Focused check completed: `src/tests/test_slurm_workflow.py` passed (6 tests)
+  in the shared thesis runtime.
+- Deferred integration: observe the new markers in one successful and one
+  failed cluster job; no experiment was launched locally.
+- README/LaTeX and reruns: public and scientific behavior are unchanged, so no
+  documentation update or additional rerun is required.
+
