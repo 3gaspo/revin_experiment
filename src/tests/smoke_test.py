@@ -135,6 +135,30 @@ def main():
             torch.tensor([3.5, 9.5]),
         )
 
+        missing_dataset = root / "datasets" / "missing"
+        missing_dataset.mkdir(parents=True)
+        pd.DataFrame({"a": [1.0, np.nan]}).to_csv(
+            missing_dataset / "missing.csv"
+        )
+        filled, filled_metadata = load_dataset(root / "datasets", "missing")
+        assert filled.values[0, 0, 1].item() == 0.0
+        assert filled_metadata["missing_values_replaced"] == 1
+        try:
+            load_dataset(root / "datasets", "missing", missing_values="error")
+        except ValueError as error:
+            assert "missing values" in str(error)
+        else:
+            raise AssertionError("strict missing-value policy must reject NaNs")
+        pd.DataFrame({"a": [1.0, np.inf]}).to_csv(
+            missing_dataset / "missing.csv"
+        )
+        try:
+            load_dataset(root / "datasets", "missing")
+        except ValueError as error:
+            assert "infinite values" in str(error)
+        else:
+            raise AssertionError("CSV infinities must be rejected")
+
         dataset = root / "datasets" / "tiny"
         dataset.mkdir(parents=True)
         t = np.arange(80)

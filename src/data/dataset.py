@@ -112,6 +112,7 @@ def _load_dataset_config(
         "date_col": raw.get("date_col"),
         "aggr": raw.get("aggr"),
         "aggr_period": raw.get("aggr_period"),
+        "missing_values": raw.get("missing_values"),
     }
     scoped = raw.get("revin")
     if scoped is not None:
@@ -121,7 +122,7 @@ def _load_dataset_config(
             options["drop_users"] = _drop_user_list(scoped.get("drop_users"))
         if scoped.get("target_cols") is not None:
             options["target_cols"] = _column_names(scoped.get("target_cols"))
-        for key in ("date_col", "aggr", "aggr_period"):
+        for key in ("date_col", "aggr", "aggr_period", "missing_values"):
             if scoped.get(key) is not None:
                 options[key] = scoped[key]
     LOGGER.info("loaded dataset config path=%s keys=%s", path, sorted(options))
@@ -137,6 +138,7 @@ def load_dataset(
     date_col: str | None = None,
     aggr: str | None = None,
     aggr_period: str | None = None,
+    missing_values: str | None = None,
 ) -> tuple[TimeSeriesData, dict[str, Any]]:
     csv_path = Path(root) / name / f"{name}.csv"
     config, loaded_config_path = _load_dataset_config(root, name, config_path)
@@ -147,12 +149,22 @@ def load_dataset(
         if aggr_period is not None
         else config.get("aggr_period") or "h"
     )
+    applied_missing_values = str(
+        missing_values
+        if missing_values is not None
+        else config.get("missing_values") or "zero"
+    ).lower()
+    if applied_missing_values not in {"zero", "error"}:
+        raise ValueError("missing_values must be 'zero' or 'error'")
     if applied_date_col:
         frame = pd.read_csv(csv_path, parse_dates=[applied_date_col])
         frame = frame.set_index(applied_date_col)
     else:
         frame = pd.read_csv(csv_path, index_col=0)
         frame.index = pd.to_datetime(frame.index)
+    source_infinite_count = int(np.isinf(frame.to_numpy(dtype=float)).sum())
+    if source_infinite_count:
+        raise ValueError(f"dataset contains {source_infinite_count} infinite values")
     if applied_aggr is not None and str(applied_aggr).lower() not in {"", "none"}:
         reducer = str(applied_aggr).lower()
         if reducer == "asfreq":
@@ -161,7 +173,14 @@ def load_dataset(
             frame = getattr(frame.resample(str(applied_aggr_period)), reducer)()
         else:
             raise ValueError(f"unknown aggregation {applied_aggr!r}")
-        frame = frame.dropna(axis=0, how="any")
+    missing_count = int(frame.isna().sum().sum())
+    if missing_count and applied_missing_values == "error":
+        raise ValueError(f"dataset contains {missing_count} missing values")
+    if missing_count:
+        frame = frame.fillna(0.0)
+    infinite_count = int(np.isinf(frame.to_numpy(dtype=float)).sum())
+    if infinite_count:
+        raise ValueError(f"dataset contains {infinite_count} infinite values")
     configured_drops = _drop_user_list(config.get("drop_users"))
     run_drops = _drop_user_list(drop_users)
     applied_drops = run_drops if drop_users is not None else configured_drops
@@ -199,6 +218,8 @@ def load_dataset(
         "date_col_applied": applied_date_col,
         "aggr_applied": applied_aggr,
         "aggr_period_applied": applied_aggr_period,
+        "missing_values_applied": applied_missing_values,
+        "missing_values_replaced": missing_count,
         "retained_users": int(frame.shape[1]),
     }
     LOGGER.info(
@@ -307,6 +328,7 @@ def build_loaders(cfg, lags: int, horizon: int, batch_size: int, seed: int):
         date_col=cfg.get("date_col"),
         aggr=cfg.get("aggr"),
         aggr_period=cfg.get("aggr_period"),
+        missing_values=cfg.get("missing_values"),
     )
     splits = split_dataset(data, cfg.date_splits, cfg.indiv_split, seed)
     loaders = {

@@ -29,7 +29,9 @@ export PYTHONPATH=src
 ```
 
 Place each wide CSV under `datasets/<name>/`; an adjacent `config.json`
-selects targets, exclusions, date handling, and aggregation. DLinear and
+selects targets, exclusions, date handling, aggregation, and missing values.
+`missing_values` defaults to `zero`; `error` rejects CSV NaNs, and infinite
+values are always rejected. DLinear and
 PatchTST train locally within each run and require no checkpoint payload.
 
 ## Main executions

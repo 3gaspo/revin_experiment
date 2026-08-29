@@ -43,6 +43,8 @@ transform. MIN differs from RevIN only at the globally learned output mapping.
 ## Important boundaries
 
 - Normalization code does not own orchestration, reporting, or plotting.
+- CSV NaNs are zero-filled by default after aggregation; `missing_values=error`
+  rejects them, and all infinite values are rejected.
 - External backbones remain byte-aligned with TimeTensors.
 - Loss, normalization, and backbone are separate experimental axes.
 - One seed owns partitioning, sampling, initialization, and optimization.

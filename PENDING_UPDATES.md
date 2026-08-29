@@ -1,5 +1,15 @@
 # Pending updates
 
+- 2026-08-29: Standardized CSV missing-value handling: NaNs default to zero
+  after aggregation, `error` rejects them, and infinity is always rejected.
+  README, architecture, and guideline now state the contract. The focused
+  loader regression and documentation validator passed; the broader smoke was
+  skipped because the shared runtime lacks `omegaconf`. The three-page
+  guideline was rebuilt and visually inspected. Deferred integration: publish
+  the code and rerun only missing-affected data identities; finite inputs are
+  unchanged, while existing superseded model runs retain their prior rerun
+  requirement.
+
 - 2026-08-28: Reconciled the five-view documentation contract by reducing the
   public README to a 103-line goal/setup/execution quickstart and leaving
   formulation, architecture, the four experiment families, protocol, and
@@ -11,7 +21,7 @@
   executive-summary change is required. Deferred integration: preview code
   sync on DGX, inspect every `*deleting` line, then perform the real sync.
 
-Last successful maintenance: 2026-08-11 10:45 +02:00.
+Last successful maintenance: 2026-08-29 00:26 +02:00.
 
 ## Pending
 
@@ -298,4 +308,3 @@ observations, and publisher validation remain pending.
   failed cluster job; no experiment was launched locally.
 - README/LaTeX and reruns: public and scientific behavior are unchanged, so no
   documentation update or additional rerun is required.
-

@@ -14,7 +14,7 @@
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 \title{\textbf{Reversible Instance Normalization Experiments}\\Experiment Guideline}
 \author{Thesis project}
-\date{25 August 2026}
+\date{29 August 2026}
 \begin{document}
 \maketitle
 
@@ -196,7 +196,9 @@ validation-selected policies, and a clearly labeled optimistic test oracle.
 The oracle is diagnostic only. Dataset configuration uses shared top-level
 fields and project-scoped overrides. For \code{drop_users}, null inherits, an
 empty list retains every CSV user, and a nonempty run value replaces the
-configured default.
+configured default. After aggregation, \code{missing_values} defaults to
+\code{zero}, replacing NaNs with zero; \code{error} rejects them, and
+infinite values are always rejected.
 
 \section{Practical validation}
 Run external-package forwards, result-format checks, and Slurm workflow tests
