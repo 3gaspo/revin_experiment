@@ -7,6 +7,19 @@ log() { printf '%s %s\n' "$(date -Is)" "$*"; }
 log_section() { printf '\n%s %s\n' "$(date -Is)" "$*"; }
 log_error() { printf '%s %s\n' "$(date -Is)" "$*" >&2; }
 
+bootstrap_on_exit() {
+  local status=$?
+  trap - EXIT
+  if [ "$status" -eq 0 ]; then
+    log_section "workflow completed status=success exit_code=0"
+  else
+    log_error "workflow completed status=failed exit_code=$status"
+  fi
+  exit "$status"
+}
+
+trap bootstrap_on_exit EXIT
+
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-core}"
 STAGES_SPEC="${STAGES:-train,tables}"
